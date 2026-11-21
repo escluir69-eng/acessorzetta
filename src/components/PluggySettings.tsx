@@ -558,8 +558,9 @@ export function PluggySettings() {
               toast.error(err?.message || "Erro no widget Pluggy Connect.");
               setConnectWidget(null);
             }}
-            onClose={() => setConnectWidget(null)}
-          />,
+              onClose={() => setConnectWidget(null)}
+            />
+          </Suspense>,
           document.body,
         )
       : null;
