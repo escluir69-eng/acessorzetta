@@ -180,7 +180,12 @@ export function PluggySettings() {
 
   const authHeaders = useCallback(async (): Promise<Record<string, string>> => {
     if (!user) throw new Error("Faça login com sua conta Google antes de configurar o Pluggy.");
-    const token = await user.getIdToken();
+    const { supabase } = await import("@/integrations/supabase/client");
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error("Sessão expirada. Entre novamente para configurar o Pluggy.");
     return {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
