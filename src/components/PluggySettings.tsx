@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { PluggyConnect } from "react-pluggy-connect";
+
+// Carregado sob demanda: o widget (e sua dependência zoid) usa `window` e
+// quebra a renderização no servidor se for importado estaticamente.
+const PluggyConnect = lazy(() =>
+  import("react-pluggy-connect").then((m) => ({ default: m.PluggyConnect })),
+);
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "@/lib/firebase";
 import { CheckCircle2, Link2, RefreshCw, Settings, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
@@ -538,8 +543,9 @@ export function PluggySettings() {
   const connectWidgetNode =
     connectWidget && typeof document !== "undefined"
       ? createPortal(
-          <PluggyConnect
-            connectToken={connectWidget.token}
+          <Suspense fallback={null}>
+            <PluggyConnect
+              connectToken={connectWidget.token}
             language="pt"
             onSuccess={(payload) => {
               const targetSlot = connectWidget.slot;
@@ -552,8 +558,9 @@ export function PluggySettings() {
               toast.error(err?.message || "Erro no widget Pluggy Connect.");
               setConnectWidget(null);
             }}
-            onClose={() => setConnectWidget(null)}
-          />,
+              onClose={() => setConnectWidget(null)}
+            />
+          </Suspense>,
           document.body,
         )
       : null;

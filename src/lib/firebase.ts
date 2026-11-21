@@ -322,6 +322,21 @@ async function upsertDoc(path: string, data: DocumentData): Promise<void> {
     { onConflict: "path" },
   );
   if (error) throw error;
+  notifyLocalChange(path);
+}
+
+// Notifica listeners locais após escritas do próprio cliente, sem depender do
+// canal realtime (que pode estar indisponível); o canal continua cobrindo
+// mudanças feitas por outros dispositivos/sessões.
+function notifyLocalChange(changedPath: string): void {
+  for (const listener of listeners) {
+    const prefix = listenerPrefix(listener);
+    const matches =
+      listener.target.kind === "doc"
+        ? changedPath === prefix
+        : changedPath.startsWith(prefix);
+    if (matches) void emitListener(listener);
+  }
 }
 
 export async function setDoc(
@@ -350,6 +365,7 @@ export async function deleteDoc(ref: DocRef): Promise<void> {
     .eq("path", ref.path)
     .eq("user_id", ownerUid());
   if (error) throw error;
+  notifyLocalChange(ref.path);
 }
 
 // --- realtime ---------------------------------------------------------------
