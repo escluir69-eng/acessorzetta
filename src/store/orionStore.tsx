@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { onAuthStateChanged, signInWithPopup, signOut, type User } from "firebase/auth";
+import { onAuthStateChanged, signInWithPopup, signOut, type User } from "@/lib/firebase";
 import {
   collection,
   deleteDoc,
@@ -16,9 +16,9 @@ import {
   where,
   writeBatch,
   type DocumentData,
-} from "firebase/firestore";
+} from "@/lib/firebase";
 import { auth, db, storage, googleProvider, handleFirestoreError, OperationType } from "@/lib/firebase";
-import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
+import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from "@/lib/firebase";
 import {
   OrionContext,
   type OrionContextValue,

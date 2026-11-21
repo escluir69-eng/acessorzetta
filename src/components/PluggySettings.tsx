@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { PluggyConnect } from "react-pluggy-connect";
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "@/lib/firebase";
 import { CheckCircle2, Link2, RefreshCw, Settings, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { fetchApiJson } from "@/lib/apiClient";

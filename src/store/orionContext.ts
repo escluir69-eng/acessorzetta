@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { User } from "firebase/auth";
+import type { User } from "@/lib/firebase";
 import type { FiscalReceipt } from "@/lib/receiptAnalysis";
 import type {
   AgendaAlarm,

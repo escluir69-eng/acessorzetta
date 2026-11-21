@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "@tanstack/react-router";
-import { ref as storageRef, uploadBytes, getBlob, getDownloadURL } from "firebase/storage";
+import { ref as storageRef, uploadBytes, getBlob, getDownloadURL } from "@/lib/firebase";
 import {
   AlertTriangle,
   Archive,

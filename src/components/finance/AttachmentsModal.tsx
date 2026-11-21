@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Download, Eye, FileText, Image as ImageIcon, Loader2, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { getBlob, ref as storageRef } from "firebase/storage";
+import { getBlob, ref as storageRef } from "@/lib/firebase";
 import { storage } from "@/lib/firebase";
 import { downloadBlob } from "@/lib/domain/invoice";
 import { resolveRowAttachments, type ResolvedAttachmentItem, type UnifiedHistoryRow } from "@/lib/domain/ledgerHistory";

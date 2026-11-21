@@ -9,7 +9,7 @@ import {
   updateDoc,
   where,
   writeBatch,
-} from "firebase/firestore";
+} from "@/lib/firebase";
 import { db, handleFirestoreError, OperationType } from "@/lib/firebase";
 import type {
   FamilyHolder,
