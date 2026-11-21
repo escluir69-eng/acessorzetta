@@ -360,7 +360,8 @@ export function PainelPage() {
                 </div>
               </div>
               <Link
-                to="/notas-fiscais?tab=aquisicoes"
+                to="/notas-fiscais"
+                search={{ tab: "aquisicoes" }}
                 className="inline-flex items-center gap-1 rounded-lg border border-[#d97706]/40 bg-white px-3 py-1.5 text-xs font-semibold text-[#92400e] hover:bg-[#fef3c7]"
               >
                 Abrir Aquisições / garantias <ArrowUpRight className="size-3.5" />
