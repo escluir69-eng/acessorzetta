@@ -543,8 +543,9 @@ export function PluggySettings() {
   const connectWidgetNode =
     connectWidget && typeof document !== "undefined"
       ? createPortal(
-          <PluggyConnect
-            connectToken={connectWidget.token}
+          <Suspense fallback={null}>
+            <PluggyConnect
+              connectToken={connectWidget.token}
             language="pt"
             onSuccess={(payload) => {
               const targetSlot = connectWidget.slot;
