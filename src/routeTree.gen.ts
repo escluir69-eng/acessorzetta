@@ -10,33 +10,412 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
+import { Route as AuthenticatedCarteiraRouteImport } from './routes/_authenticated/carteira'
+import { Route as AuthenticatedComprasRouteImport } from './routes/_authenticated/compras'
+import { Route as AuthenticatedCotacoesRouteImport } from './routes/_authenticated/cotacoes'
+import { Route as AuthenticatedDespesasRouteImport } from './routes/_authenticated/despesas'
+import { Route as AuthenticatedNotasFiscaisRouteImport } from './routes/_authenticated/notas-fiscais'
+import { Route as AuthenticatedOrcamentoRouteImport } from './routes/_authenticated/orcamento'
+import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
+import { Route as AuthenticatedReceitasRouteImport } from './routes/_authenticated/receitas'
+import { Route as AuthenticatedVeiculosRouteImport } from './routes/_authenticated/veiculos'
+import { Route as AuthenticatedViagensRouteImport } from './routes/_authenticated/viagens'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiFiscalLookupRouteImport } from './routes/api/fiscal/lookup'
+import { Route as ApiFiscalOcrRouteImport } from './routes/api/fiscal/ocr'
+import { Route as ApiGaragemFipeConsultaRouteImport } from './routes/api/garagem/fipe-consulta'
+import { Route as ApiPluggyHealthRouteImport } from './routes/api/pluggy/health'
+import { Route as ApiPluggyStatusRouteImport } from './routes/api/pluggy/status'
+import { Route as ApiQuotesCurrenciesRouteImport } from './routes/api/quotes/currencies'
+import { Route as ApiQuotesStocksRouteImport } from './routes/api/quotes/stocks'
+import { Route as ApiSgsIndexRouteImport } from './routes/api/sgs/$index'
+import { Route as ApiWeatherIndexRouteImport } from './routes/api/weather/index'
+import { Route as ApiPluggySlotConfigRouteImport } from './routes/api/pluggy/$slot/config'
+import { Route as ApiPluggySlotConnectTokenRouteImport } from './routes/api/pluggy/$slot/connect-token'
+import { Route as ApiPluggySlotItemRouteImport } from './routes/api/pluggy/$slot/item'
+import { Route as ApiPluggySlotSyncRouteImport } from './routes/api/pluggy/$slot/sync'
+import { Route as ApiQuotesStockSymbolRouteImport } from './routes/api/quotes/stock/$symbol'
+import { Route as ApiWeatherSearchIndexRouteImport } from './routes/api/weather/search/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCarteiraRoute = AuthenticatedCarteiraRouteImport.update({
+  id: '/carteira',
+  path: '/carteira',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedComprasRoute = AuthenticatedComprasRouteImport.update({
+  id: '/compras',
+  path: '/compras',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCotacoesRoute = AuthenticatedCotacoesRouteImport.update({
+  id: '/cotacoes',
+  path: '/cotacoes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedDespesasRoute = AuthenticatedDespesasRouteImport.update({
+  id: '/despesas',
+  path: '/despesas',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedNotasFiscaisRoute =
+  AuthenticatedNotasFiscaisRouteImport.update({
+    id: '/notas-fiscais',
+    path: '/notas-fiscais',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedOrcamentoRoute = AuthenticatedOrcamentoRouteImport.update({
+  id: '/orcamento',
+  path: '/orcamento',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
+  id: '/painel',
+  path: '/painel',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedReceitasRoute = AuthenticatedReceitasRouteImport.update({
+  id: '/receitas',
+  path: '/receitas',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedVeiculosRoute = AuthenticatedVeiculosRouteImport.update({
+  id: '/veiculos',
+  path: '/veiculos',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedViagensRoute = AuthenticatedViagensRouteImport.update({
+  id: '/viagens',
+  path: '/viagens',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFiscalLookupRoute = ApiFiscalLookupRouteImport.update({
+  id: '/api/fiscal/lookup',
+  path: '/api/fiscal/lookup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFiscalOcrRoute = ApiFiscalOcrRouteImport.update({
+  id: '/api/fiscal/ocr',
+  path: '/api/fiscal/ocr',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGaragemFipeConsultaRoute = ApiGaragemFipeConsultaRouteImport.update({
+  id: '/api/garagem/fipe-consulta',
+  path: '/api/garagem/fipe-consulta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPluggyHealthRoute = ApiPluggyHealthRouteImport.update({
+  id: '/api/pluggy/health',
+  path: '/api/pluggy/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPluggyStatusRoute = ApiPluggyStatusRouteImport.update({
+  id: '/api/pluggy/status',
+  path: '/api/pluggy/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuotesCurrenciesRoute = ApiQuotesCurrenciesRouteImport.update({
+  id: '/api/quotes/currencies',
+  path: '/api/quotes/currencies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuotesStocksRoute = ApiQuotesStocksRouteImport.update({
+  id: '/api/quotes/stocks',
+  path: '/api/quotes/stocks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSgsIndexRoute = ApiSgsIndexRouteImport.update({
+  id: '/api/sgs/$index',
+  path: '/api/sgs/$index',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWeatherIndexRoute = ApiWeatherIndexRouteImport.update({
+  id: '/api/weather/',
+  path: '/api/weather/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPluggySlotConfigRoute = ApiPluggySlotConfigRouteImport.update({
+  id: '/api/pluggy/$slot/config',
+  path: '/api/pluggy/$slot/config',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPluggySlotConnectTokenRoute =
+  ApiPluggySlotConnectTokenRouteImport.update({
+    id: '/api/pluggy/$slot/connect-token',
+    path: '/api/pluggy/$slot/connect-token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPluggySlotItemRoute = ApiPluggySlotItemRouteImport.update({
+  id: '/api/pluggy/$slot/item',
+  path: '/api/pluggy/$slot/item',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPluggySlotSyncRoute = ApiPluggySlotSyncRouteImport.update({
+  id: '/api/pluggy/$slot/sync',
+  path: '/api/pluggy/$slot/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuotesStockSymbolRoute = ApiQuotesStockSymbolRouteImport.update({
+  id: '/api/quotes/stock/$symbol',
+  path: '/api/quotes/stock/$symbol',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWeatherSearchIndexRoute = ApiWeatherSearchIndexRouteImport.update({
+  id: '/api/weather/search/',
+  path: '/api/weather/search/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/agenda': typeof AuthenticatedAgendaRoute
+  '/carteira': typeof AuthenticatedCarteiraRoute
+  '/compras': typeof AuthenticatedComprasRoute
+  '/cotacoes': typeof AuthenticatedCotacoesRoute
+  '/despesas': typeof AuthenticatedDespesasRoute
+  '/notas-fiscais': typeof AuthenticatedNotasFiscaisRoute
+  '/orcamento': typeof AuthenticatedOrcamentoRoute
+  '/painel': typeof AuthenticatedPainelRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
+  '/receitas': typeof AuthenticatedReceitasRoute
+  '/veiculos': typeof AuthenticatedVeiculosRoute
+  '/viagens': typeof AuthenticatedViagensRoute
+  '/api/health': typeof ApiHealthRoute
+  '/api/fiscal/lookup': typeof ApiFiscalLookupRoute
+  '/api/fiscal/ocr': typeof ApiFiscalOcrRoute
+  '/api/garagem/fipe-consulta': typeof ApiGaragemFipeConsultaRoute
+  '/api/pluggy/health': typeof ApiPluggyHealthRoute
+  '/api/pluggy/status': typeof ApiPluggyStatusRoute
+  '/api/quotes/currencies': typeof ApiQuotesCurrenciesRoute
+  '/api/quotes/stocks': typeof ApiQuotesStocksRoute
+  '/api/sgs/$index': typeof ApiSgsIndexRoute
+  '/api/weather/': typeof ApiWeatherIndexRoute
+  '/api/pluggy/$slot/config': typeof ApiPluggySlotConfigRoute
+  '/api/pluggy/$slot/connect-token': typeof ApiPluggySlotConnectTokenRoute
+  '/api/pluggy/$slot/item': typeof ApiPluggySlotItemRoute
+  '/api/pluggy/$slot/sync': typeof ApiPluggySlotSyncRoute
+  '/api/quotes/stock/$symbol': typeof ApiQuotesStockSymbolRoute
+  '/api/weather/search/': typeof ApiWeatherSearchIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/agenda': typeof AuthenticatedAgendaRoute
+  '/carteira': typeof AuthenticatedCarteiraRoute
+  '/compras': typeof AuthenticatedComprasRoute
+  '/cotacoes': typeof AuthenticatedCotacoesRoute
+  '/despesas': typeof AuthenticatedDespesasRoute
+  '/notas-fiscais': typeof AuthenticatedNotasFiscaisRoute
+  '/orcamento': typeof AuthenticatedOrcamentoRoute
+  '/painel': typeof AuthenticatedPainelRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
+  '/receitas': typeof AuthenticatedReceitasRoute
+  '/veiculos': typeof AuthenticatedVeiculosRoute
+  '/viagens': typeof AuthenticatedViagensRoute
+  '/api/health': typeof ApiHealthRoute
+  '/api/fiscal/lookup': typeof ApiFiscalLookupRoute
+  '/api/fiscal/ocr': typeof ApiFiscalOcrRoute
+  '/api/garagem/fipe-consulta': typeof ApiGaragemFipeConsultaRoute
+  '/api/pluggy/health': typeof ApiPluggyHealthRoute
+  '/api/pluggy/status': typeof ApiPluggyStatusRoute
+  '/api/quotes/currencies': typeof ApiQuotesCurrenciesRoute
+  '/api/quotes/stocks': typeof ApiQuotesStocksRoute
+  '/api/sgs/$index': typeof ApiSgsIndexRoute
+  '/api/weather': typeof ApiWeatherIndexRoute
+  '/api/pluggy/$slot/config': typeof ApiPluggySlotConfigRoute
+  '/api/pluggy/$slot/connect-token': typeof ApiPluggySlotConnectTokenRoute
+  '/api/pluggy/$slot/item': typeof ApiPluggySlotItemRoute
+  '/api/pluggy/$slot/sync': typeof ApiPluggySlotSyncRoute
+  '/api/quotes/stock/$symbol': typeof ApiQuotesStockSymbolRoute
+  '/api/weather/search': typeof ApiWeatherSearchIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
+  '/_authenticated/carteira': typeof AuthenticatedCarteiraRoute
+  '/_authenticated/compras': typeof AuthenticatedComprasRoute
+  '/_authenticated/cotacoes': typeof AuthenticatedCotacoesRoute
+  '/_authenticated/despesas': typeof AuthenticatedDespesasRoute
+  '/_authenticated/notas-fiscais': typeof AuthenticatedNotasFiscaisRoute
+  '/_authenticated/orcamento': typeof AuthenticatedOrcamentoRoute
+  '/_authenticated/painel': typeof AuthenticatedPainelRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
+  '/_authenticated/receitas': typeof AuthenticatedReceitasRoute
+  '/_authenticated/veiculos': typeof AuthenticatedVeiculosRoute
+  '/_authenticated/viagens': typeof AuthenticatedViagensRoute
+  '/api/health': typeof ApiHealthRoute
+  '/api/fiscal/lookup': typeof ApiFiscalLookupRoute
+  '/api/fiscal/ocr': typeof ApiFiscalOcrRoute
+  '/api/garagem/fipe-consulta': typeof ApiGaragemFipeConsultaRoute
+  '/api/pluggy/health': typeof ApiPluggyHealthRoute
+  '/api/pluggy/status': typeof ApiPluggyStatusRoute
+  '/api/quotes/currencies': typeof ApiQuotesCurrenciesRoute
+  '/api/quotes/stocks': typeof ApiQuotesStocksRoute
+  '/api/sgs/$index': typeof ApiSgsIndexRoute
+  '/api/weather/': typeof ApiWeatherIndexRoute
+  '/api/pluggy/$slot/config': typeof ApiPluggySlotConfigRoute
+  '/api/pluggy/$slot/connect-token': typeof ApiPluggySlotConnectTokenRoute
+  '/api/pluggy/$slot/item': typeof ApiPluggySlotItemRoute
+  '/api/pluggy/$slot/sync': typeof ApiPluggySlotSyncRoute
+  '/api/quotes/stock/$symbol': typeof ApiQuotesStockSymbolRoute
+  '/api/weather/search/': typeof ApiWeatherSearchIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/agenda'
+    | '/carteira'
+    | '/compras'
+    | '/cotacoes'
+    | '/despesas'
+    | '/notas-fiscais'
+    | '/orcamento'
+    | '/painel'
+    | '/perfil'
+    | '/receitas'
+    | '/veiculos'
+    | '/viagens'
+    | '/api/health'
+    | '/api/fiscal/lookup'
+    | '/api/fiscal/ocr'
+    | '/api/garagem/fipe-consulta'
+    | '/api/pluggy/health'
+    | '/api/pluggy/status'
+    | '/api/quotes/currencies'
+    | '/api/quotes/stocks'
+    | '/api/sgs/$index'
+    | '/api/weather/'
+    | '/api/pluggy/$slot/config'
+    | '/api/pluggy/$slot/connect-token'
+    | '/api/pluggy/$slot/item'
+    | '/api/pluggy/$slot/sync'
+    | '/api/quotes/stock/$symbol'
+    | '/api/weather/search/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/agenda'
+    | '/carteira'
+    | '/compras'
+    | '/cotacoes'
+    | '/despesas'
+    | '/notas-fiscais'
+    | '/orcamento'
+    | '/painel'
+    | '/perfil'
+    | '/receitas'
+    | '/veiculos'
+    | '/viagens'
+    | '/api/health'
+    | '/api/fiscal/lookup'
+    | '/api/fiscal/ocr'
+    | '/api/garagem/fipe-consulta'
+    | '/api/pluggy/health'
+    | '/api/pluggy/status'
+    | '/api/quotes/currencies'
+    | '/api/quotes/stocks'
+    | '/api/sgs/$index'
+    | '/api/weather'
+    | '/api/pluggy/$slot/config'
+    | '/api/pluggy/$slot/connect-token'
+    | '/api/pluggy/$slot/item'
+    | '/api/pluggy/$slot/sync'
+    | '/api/quotes/stock/$symbol'
+    | '/api/weather/search'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/login'
+    | '/_authenticated/agenda'
+    | '/_authenticated/carteira'
+    | '/_authenticated/compras'
+    | '/_authenticated/cotacoes'
+    | '/_authenticated/despesas'
+    | '/_authenticated/notas-fiscais'
+    | '/_authenticated/orcamento'
+    | '/_authenticated/painel'
+    | '/_authenticated/perfil'
+    | '/_authenticated/receitas'
+    | '/_authenticated/veiculos'
+    | '/_authenticated/viagens'
+    | '/api/health'
+    | '/api/fiscal/lookup'
+    | '/api/fiscal/ocr'
+    | '/api/garagem/fipe-consulta'
+    | '/api/pluggy/health'
+    | '/api/pluggy/status'
+    | '/api/quotes/currencies'
+    | '/api/quotes/stocks'
+    | '/api/sgs/$index'
+    | '/api/weather/'
+    | '/api/pluggy/$slot/config'
+    | '/api/pluggy/$slot/connect-token'
+    | '/api/pluggy/$slot/item'
+    | '/api/pluggy/$slot/sync'
+    | '/api/quotes/stock/$symbol'
+    | '/api/weather/search/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  ApiHealthRoute: typeof ApiHealthRoute
+  ApiFiscalLookupRoute: typeof ApiFiscalLookupRoute
+  ApiFiscalOcrRoute: typeof ApiFiscalOcrRoute
+  ApiGaragemFipeConsultaRoute: typeof ApiGaragemFipeConsultaRoute
+  ApiPluggyHealthRoute: typeof ApiPluggyHealthRoute
+  ApiPluggyStatusRoute: typeof ApiPluggyStatusRoute
+  ApiQuotesCurrenciesRoute: typeof ApiQuotesCurrenciesRoute
+  ApiQuotesStocksRoute: typeof ApiQuotesStocksRoute
+  ApiSgsIndexRoute: typeof ApiSgsIndexRoute
+  ApiWeatherIndexRoute: typeof ApiWeatherIndexRoute
+  ApiPluggySlotConfigRoute: typeof ApiPluggySlotConfigRoute
+  ApiPluggySlotConnectTokenRoute: typeof ApiPluggySlotConnectTokenRoute
+  ApiPluggySlotItemRoute: typeof ApiPluggySlotItemRoute
+  ApiPluggySlotSyncRoute: typeof ApiPluggySlotSyncRoute
+  ApiQuotesStockSymbolRoute: typeof ApiQuotesStockSymbolRoute
+  ApiWeatherSearchIndexRoute: typeof ApiWeatherSearchIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +427,273 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/agenda': {
+      id: '/_authenticated/agenda'
+      path: '/agenda'
+      fullPath: '/agenda'
+      preLoaderRoute: typeof AuthenticatedAgendaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/carteira': {
+      id: '/_authenticated/carteira'
+      path: '/carteira'
+      fullPath: '/carteira'
+      preLoaderRoute: typeof AuthenticatedCarteiraRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/compras': {
+      id: '/_authenticated/compras'
+      path: '/compras'
+      fullPath: '/compras'
+      preLoaderRoute: typeof AuthenticatedComprasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/cotacoes': {
+      id: '/_authenticated/cotacoes'
+      path: '/cotacoes'
+      fullPath: '/cotacoes'
+      preLoaderRoute: typeof AuthenticatedCotacoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/despesas': {
+      id: '/_authenticated/despesas'
+      path: '/despesas'
+      fullPath: '/despesas'
+      preLoaderRoute: typeof AuthenticatedDespesasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/notas-fiscais': {
+      id: '/_authenticated/notas-fiscais'
+      path: '/notas-fiscais'
+      fullPath: '/notas-fiscais'
+      preLoaderRoute: typeof AuthenticatedNotasFiscaisRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/orcamento': {
+      id: '/_authenticated/orcamento'
+      path: '/orcamento'
+      fullPath: '/orcamento'
+      preLoaderRoute: typeof AuthenticatedOrcamentoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/painel': {
+      id: '/_authenticated/painel'
+      path: '/painel'
+      fullPath: '/painel'
+      preLoaderRoute: typeof AuthenticatedPainelRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/receitas': {
+      id: '/_authenticated/receitas'
+      path: '/receitas'
+      fullPath: '/receitas'
+      preLoaderRoute: typeof AuthenticatedReceitasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/veiculos': {
+      id: '/_authenticated/veiculos'
+      path: '/veiculos'
+      fullPath: '/veiculos'
+      preLoaderRoute: typeof AuthenticatedVeiculosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/viagens': {
+      id: '/_authenticated/viagens'
+      path: '/viagens'
+      fullPath: '/viagens'
+      preLoaderRoute: typeof AuthenticatedViagensRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fiscal/lookup': {
+      id: '/api/fiscal/lookup'
+      path: '/api/fiscal/lookup'
+      fullPath: '/api/fiscal/lookup'
+      preLoaderRoute: typeof ApiFiscalLookupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fiscal/ocr': {
+      id: '/api/fiscal/ocr'
+      path: '/api/fiscal/ocr'
+      fullPath: '/api/fiscal/ocr'
+      preLoaderRoute: typeof ApiFiscalOcrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/garagem/fipe-consulta': {
+      id: '/api/garagem/fipe-consulta'
+      path: '/api/garagem/fipe-consulta'
+      fullPath: '/api/garagem/fipe-consulta'
+      preLoaderRoute: typeof ApiGaragemFipeConsultaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pluggy/health': {
+      id: '/api/pluggy/health'
+      path: '/api/pluggy/health'
+      fullPath: '/api/pluggy/health'
+      preLoaderRoute: typeof ApiPluggyHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pluggy/status': {
+      id: '/api/pluggy/status'
+      path: '/api/pluggy/status'
+      fullPath: '/api/pluggy/status'
+      preLoaderRoute: typeof ApiPluggyStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quotes/currencies': {
+      id: '/api/quotes/currencies'
+      path: '/api/quotes/currencies'
+      fullPath: '/api/quotes/currencies'
+      preLoaderRoute: typeof ApiQuotesCurrenciesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quotes/stocks': {
+      id: '/api/quotes/stocks'
+      path: '/api/quotes/stocks'
+      fullPath: '/api/quotes/stocks'
+      preLoaderRoute: typeof ApiQuotesStocksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sgs/$index': {
+      id: '/api/sgs/$index'
+      path: '/api/sgs/$index'
+      fullPath: '/api/sgs/$index'
+      preLoaderRoute: typeof ApiSgsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/weather/': {
+      id: '/api/weather/'
+      path: '/api/weather'
+      fullPath: '/api/weather/'
+      preLoaderRoute: typeof ApiWeatherIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pluggy/$slot/config': {
+      id: '/api/pluggy/$slot/config'
+      path: '/api/pluggy/$slot/config'
+      fullPath: '/api/pluggy/$slot/config'
+      preLoaderRoute: typeof ApiPluggySlotConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pluggy/$slot/connect-token': {
+      id: '/api/pluggy/$slot/connect-token'
+      path: '/api/pluggy/$slot/connect-token'
+      fullPath: '/api/pluggy/$slot/connect-token'
+      preLoaderRoute: typeof ApiPluggySlotConnectTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pluggy/$slot/item': {
+      id: '/api/pluggy/$slot/item'
+      path: '/api/pluggy/$slot/item'
+      fullPath: '/api/pluggy/$slot/item'
+      preLoaderRoute: typeof ApiPluggySlotItemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pluggy/$slot/sync': {
+      id: '/api/pluggy/$slot/sync'
+      path: '/api/pluggy/$slot/sync'
+      fullPath: '/api/pluggy/$slot/sync'
+      preLoaderRoute: typeof ApiPluggySlotSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quotes/stock/$symbol': {
+      id: '/api/quotes/stock/$symbol'
+      path: '/api/quotes/stock/$symbol'
+      fullPath: '/api/quotes/stock/$symbol'
+      preLoaderRoute: typeof ApiQuotesStockSymbolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/weather/search/': {
+      id: '/api/weather/search/'
+      path: '/api/weather/search'
+      fullPath: '/api/weather/search/'
+      preLoaderRoute: typeof ApiWeatherSearchIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
+  AuthenticatedCarteiraRoute: typeof AuthenticatedCarteiraRoute
+  AuthenticatedComprasRoute: typeof AuthenticatedComprasRoute
+  AuthenticatedCotacoesRoute: typeof AuthenticatedCotacoesRoute
+  AuthenticatedDespesasRoute: typeof AuthenticatedDespesasRoute
+  AuthenticatedNotasFiscaisRoute: typeof AuthenticatedNotasFiscaisRoute
+  AuthenticatedOrcamentoRoute: typeof AuthenticatedOrcamentoRoute
+  AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+  AuthenticatedReceitasRoute: typeof AuthenticatedReceitasRoute
+  AuthenticatedVeiculosRoute: typeof AuthenticatedVeiculosRoute
+  AuthenticatedViagensRoute: typeof AuthenticatedViagensRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
+  AuthenticatedCarteiraRoute: AuthenticatedCarteiraRoute,
+  AuthenticatedComprasRoute: AuthenticatedComprasRoute,
+  AuthenticatedCotacoesRoute: AuthenticatedCotacoesRoute,
+  AuthenticatedDespesasRoute: AuthenticatedDespesasRoute,
+  AuthenticatedNotasFiscaisRoute: AuthenticatedNotasFiscaisRoute,
+  AuthenticatedOrcamentoRoute: AuthenticatedOrcamentoRoute,
+  AuthenticatedPainelRoute: AuthenticatedPainelRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+  AuthenticatedReceitasRoute: AuthenticatedReceitasRoute,
+  AuthenticatedVeiculosRoute: AuthenticatedVeiculosRoute,
+  AuthenticatedViagensRoute: AuthenticatedViagensRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  LoginRoute: LoginRoute,
+  ApiHealthRoute: ApiHealthRoute,
+  ApiFiscalLookupRoute: ApiFiscalLookupRoute,
+  ApiFiscalOcrRoute: ApiFiscalOcrRoute,
+  ApiGaragemFipeConsultaRoute: ApiGaragemFipeConsultaRoute,
+  ApiPluggyHealthRoute: ApiPluggyHealthRoute,
+  ApiPluggyStatusRoute: ApiPluggyStatusRoute,
+  ApiQuotesCurrenciesRoute: ApiQuotesCurrenciesRoute,
+  ApiQuotesStocksRoute: ApiQuotesStocksRoute,
+  ApiSgsIndexRoute: ApiSgsIndexRoute,
+  ApiWeatherIndexRoute: ApiWeatherIndexRoute,
+  ApiPluggySlotConfigRoute: ApiPluggySlotConfigRoute,
+  ApiPluggySlotConnectTokenRoute: ApiPluggySlotConnectTokenRoute,
+  ApiPluggySlotItemRoute: ApiPluggySlotItemRoute,
+  ApiPluggySlotSyncRoute: ApiPluggySlotSyncRoute,
+  ApiQuotesStockSymbolRoute: ApiQuotesStockSymbolRoute,
+  ApiWeatherSearchIndexRoute: ApiWeatherSearchIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
