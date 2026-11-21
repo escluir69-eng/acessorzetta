@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "@tanstack/react-router";
+import { useSearchParams } from "@/lib/searchParams";
 import { ref as storageRef, uploadBytes, getBlob, getDownloadURL } from "@/lib/firebase";
 import {
   AlertTriangle,
@@ -311,7 +311,8 @@ export function NotasFiscaisPage() {
     if (!user) return;
     setConsultingUrl(true);
     try {
-      const bearer = await user.getIdToken();
+      const { supabase } = await import("@/integrations/supabase/client");
+      const bearer = (await supabase.auth.getSession()).data.session?.access_token ?? "";
       const response = await fetch("/api/fiscal/lookup", {
         method: "POST",
         headers: {
@@ -587,7 +588,8 @@ export function NotasFiscaisPage() {
       for (let i = 0; i < bytes.length; i += 32768) {
         binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
       }
-      const bearer = await user.getIdToken();
+      const { supabase } = await import("@/integrations/supabase/client");
+      const bearer = (await supabase.auth.getSession()).data.session?.access_token ?? "";
       const response = await fetch("/api/fiscal/ocr", {
         method: "POST",
         headers: {

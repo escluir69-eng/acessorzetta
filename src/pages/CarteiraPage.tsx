@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "@tanstack/react-router";
+import { useSearchParams } from "@/lib/searchParams";
 import {
   AlertTriangle,
   ChevronDown,

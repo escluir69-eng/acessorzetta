@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "@tanstack/react-router";
+import { useSearchParams } from "@/lib/searchParams";
 import {
   Calculator,
   ChevronLeft,
