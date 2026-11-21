@@ -28,7 +28,9 @@ import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiGaragemFipeConsultaRouteImport } from './routes/api/garagem/fipe-consulta'
 import { Route as ApiQuotesCurrenciesRouteImport } from './routes/api/quotes/currencies'
 import { Route as ApiQuotesStocksRouteImport } from './routes/api/quotes/stocks'
+import { Route as ApiSgsIndexRouteImport } from './routes/api/sgs/$index'
 import { Route as ApiWeatherIndexRouteImport } from './routes/api/weather/index'
+import { Route as ApiQuotesStockSymbolRouteImport } from './routes/api/quotes/stock/$symbol'
 import { Route as ApiWeatherSearchIndexRouteImport } from './routes/api/weather/search/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -126,9 +128,19 @@ const ApiQuotesStocksRoute = ApiQuotesStocksRouteImport.update({
   path: '/api/quotes/stocks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSgsIndexRoute = ApiSgsIndexRouteImport.update({
+  id: '/api/sgs/$index',
+  path: '/api/sgs/$index',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWeatherIndexRoute = ApiWeatherIndexRouteImport.update({
   id: '/api/weather/',
   path: '/api/weather/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuotesStockSymbolRoute = ApiQuotesStockSymbolRouteImport.update({
+  id: '/api/quotes/stock/$symbol',
+  path: '/api/quotes/stock/$symbol',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiWeatherSearchIndexRoute = ApiWeatherSearchIndexRouteImport.update({
@@ -156,7 +168,9 @@ export interface FileRoutesByFullPath {
   '/api/garagem/fipe-consulta': typeof ApiGaragemFipeConsultaRoute
   '/api/quotes/currencies': typeof ApiQuotesCurrenciesRoute
   '/api/quotes/stocks': typeof ApiQuotesStocksRoute
+  '/api/sgs/$index': typeof ApiSgsIndexRoute
   '/api/weather/': typeof ApiWeatherIndexRoute
+  '/api/quotes/stock/$symbol': typeof ApiQuotesStockSymbolRoute
   '/api/weather/search/': typeof ApiWeatherSearchIndexRoute
 }
 export interface FileRoutesByTo {
@@ -178,7 +192,9 @@ export interface FileRoutesByTo {
   '/api/garagem/fipe-consulta': typeof ApiGaragemFipeConsultaRoute
   '/api/quotes/currencies': typeof ApiQuotesCurrenciesRoute
   '/api/quotes/stocks': typeof ApiQuotesStocksRoute
+  '/api/sgs/$index': typeof ApiSgsIndexRoute
   '/api/weather': typeof ApiWeatherIndexRoute
+  '/api/quotes/stock/$symbol': typeof ApiQuotesStockSymbolRoute
   '/api/weather/search': typeof ApiWeatherSearchIndexRoute
 }
 export interface FileRoutesById {
@@ -202,7 +218,9 @@ export interface FileRoutesById {
   '/api/garagem/fipe-consulta': typeof ApiGaragemFipeConsultaRoute
   '/api/quotes/currencies': typeof ApiQuotesCurrenciesRoute
   '/api/quotes/stocks': typeof ApiQuotesStocksRoute
+  '/api/sgs/$index': typeof ApiSgsIndexRoute
   '/api/weather/': typeof ApiWeatherIndexRoute
+  '/api/quotes/stock/$symbol': typeof ApiQuotesStockSymbolRoute
   '/api/weather/search/': typeof ApiWeatherSearchIndexRoute
 }
 export interface FileRouteTypes {
@@ -226,7 +244,9 @@ export interface FileRouteTypes {
     | '/api/garagem/fipe-consulta'
     | '/api/quotes/currencies'
     | '/api/quotes/stocks'
+    | '/api/sgs/$index'
     | '/api/weather/'
+    | '/api/quotes/stock/$symbol'
     | '/api/weather/search/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -248,7 +268,9 @@ export interface FileRouteTypes {
     | '/api/garagem/fipe-consulta'
     | '/api/quotes/currencies'
     | '/api/quotes/stocks'
+    | '/api/sgs/$index'
     | '/api/weather'
+    | '/api/quotes/stock/$symbol'
     | '/api/weather/search'
   id:
     | '__root__'
@@ -271,7 +293,9 @@ export interface FileRouteTypes {
     | '/api/garagem/fipe-consulta'
     | '/api/quotes/currencies'
     | '/api/quotes/stocks'
+    | '/api/sgs/$index'
     | '/api/weather/'
+    | '/api/quotes/stock/$symbol'
     | '/api/weather/search/'
   fileRoutesById: FileRoutesById
 }
@@ -283,7 +307,9 @@ export interface RootRouteChildren {
   ApiGaragemFipeConsultaRoute: typeof ApiGaragemFipeConsultaRoute
   ApiQuotesCurrenciesRoute: typeof ApiQuotesCurrenciesRoute
   ApiQuotesStocksRoute: typeof ApiQuotesStocksRoute
+  ApiSgsIndexRoute: typeof ApiSgsIndexRoute
   ApiWeatherIndexRoute: typeof ApiWeatherIndexRoute
+  ApiQuotesStockSymbolRoute: typeof ApiQuotesStockSymbolRoute
   ApiWeatherSearchIndexRoute: typeof ApiWeatherSearchIndexRoute
 }
 
@@ -422,11 +448,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiQuotesStocksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/sgs/$index': {
+      id: '/api/sgs/$index'
+      path: '/api/sgs/$index'
+      fullPath: '/api/sgs/$index'
+      preLoaderRoute: typeof ApiSgsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/weather/': {
       id: '/api/weather/'
       path: '/api/weather'
       fullPath: '/api/weather/'
       preLoaderRoute: typeof ApiWeatherIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quotes/stock/$symbol': {
+      id: '/api/quotes/stock/$symbol'
+      path: '/api/quotes/stock/$symbol'
+      fullPath: '/api/quotes/stock/$symbol'
+      preLoaderRoute: typeof ApiQuotesStockSymbolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/weather/search/': {
@@ -481,7 +521,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGaragemFipeConsultaRoute: ApiGaragemFipeConsultaRoute,
   ApiQuotesCurrenciesRoute: ApiQuotesCurrenciesRoute,
   ApiQuotesStocksRoute: ApiQuotesStocksRoute,
+  ApiSgsIndexRoute: ApiSgsIndexRoute,
   ApiWeatherIndexRoute: ApiWeatherIndexRoute,
+  ApiQuotesStockSymbolRoute: ApiQuotesStockSymbolRoute,
   ApiWeatherSearchIndexRoute: ApiWeatherSearchIndexRoute,
 }
 export const routeTree = rootRouteImport
