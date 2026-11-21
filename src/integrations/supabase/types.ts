@@ -14,7 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      firestore_docs: {
+        Row: {
+          data: Json
+          path: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          data?: Json
+          path: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          data?: Json
+          path?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
