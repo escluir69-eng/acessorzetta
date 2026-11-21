@@ -262,7 +262,7 @@ export function AgendaAlarmManager() {
     params.delete("alarm");
     params.delete("action");
     const nextSearch = params.toString();
-    navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ""}`, { replace: true });
+    navigate({ to: `${location.pathname}${nextSearch ? `?${nextSearch}` : ""}`, replace: true });
   }, [handleDismissAlarm, handleSnoozeAlarm, location.pathname, location.search, navigate, state.agendaAlarms]);
 
   // Efficient alarm scheduler (checks every 5s cleanly without heavy polling)

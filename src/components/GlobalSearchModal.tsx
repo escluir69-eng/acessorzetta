@@ -61,7 +61,7 @@ export function GlobalSearchModal({
   function handleSelect(item: GlobalSearchResult) {
     onClose();
     setQueryText("");
-    navigate(item.to);
+    navigate({ to: item.to });
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {

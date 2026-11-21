@@ -293,7 +293,7 @@ export function AgendaEventModal({
                     type="button"
                     onClick={() => {
                       onClose();
-                      navigate(event.originRoute!);
+                      navigate({ to: event.originRoute! });
                     }}
                     className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#173d4a] px-3 text-xs font-semibold text-[#173d4a] hover:bg-[#edf1f3] dark:border-[#b99555] dark:text-[#b99555] dark:hover:bg-[#152b3f]"
                   >
