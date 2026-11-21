@@ -235,8 +235,9 @@ function ownerUid(): string {
 
 export interface DocSnapshot {
   id: string;
+  ref: DocRef;
   exists: () => boolean;
-  data: () => DocumentData | undefined;
+  data: () => DocumentData;
 }
 
 export interface QuerySnapshot {
@@ -246,11 +247,13 @@ export interface QuerySnapshot {
   forEach: (cb: (d: DocSnapshot) => void) => void;
 }
 
-function makeDocSnapshot(id: string, data: DocumentData | undefined): DocSnapshot {
+function makeDocSnapshot(id: string, data: DocumentData | undefined, path?: string): DocSnapshot {
   return {
     id,
+    ref: { kind: "doc", path: path ?? id, id },
     exists: () => data !== undefined,
-    data: () => data,
+    // Mantém a semântica do Firestore: undefined quando o documento não existe.
+    data: () => data as DocumentData,
   };
 }
 
