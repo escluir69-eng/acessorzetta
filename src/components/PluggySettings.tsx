@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { PluggyConnect } from "react-pluggy-connect";
+
+// Carregado sob demanda: o widget (e sua dependência zoid) usa `window` e
+// quebra a renderização no servidor se for importado estaticamente.
+const PluggyConnect = lazy(() =>
+  import("react-pluggy-connect").then((m) => ({ default: m.PluggyConnect })),
+);
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "@/lib/firebase";
 import { CheckCircle2, Link2, RefreshCw, Settings, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
