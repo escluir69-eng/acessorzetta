@@ -356,7 +356,7 @@ type SnapshotCallback = (snap: DocSnapshot | QuerySnapshot) => void;
 interface Listener {
   target: DocRef | QueryRef | CollectionRef;
   onNext: SnapshotCallback;
-  onError?: (error: unknown) => void;
+  onError?: (error: Error) => void;
 }
 
 const listeners = new Set<Listener>();
@@ -376,7 +376,7 @@ async function emitListener(listener: Listener): Promise<void> {
       listener.onNext(await fetchQuery(q));
     }
   } catch (error) {
-    listener.onError?.(error);
+    listener.onError?.(error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -415,9 +415,19 @@ function ensureRealtime(uid: string): void {
 }
 
 export function onSnapshot(
+  target: DocRef,
+  onNext: (snap: DocSnapshot) => void,
+  onError?: (error: Error) => void,
+): () => void;
+export function onSnapshot(
+  target: QueryRef | CollectionRef,
+  onNext: (snap: QuerySnapshot) => void,
+  onError?: (error: Error) => void,
+): () => void;
+export function onSnapshot(
   target: DocRef | QueryRef | CollectionRef,
   onNext: SnapshotCallback,
-  onError?: (error: unknown) => void,
+  onError?: (error: Error) => void,
 ): () => void {
   const listener: Listener = { target, onNext, onError };
   listeners.add(listener);
