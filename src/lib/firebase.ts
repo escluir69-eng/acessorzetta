@@ -365,6 +365,7 @@ export async function deleteDoc(ref: DocRef): Promise<void> {
     .eq("path", ref.path)
     .eq("user_id", ownerUid());
   if (error) throw error;
+  notifyLocalChange(ref.path);
 }
 
 // --- realtime ---------------------------------------------------------------
