@@ -259,7 +259,7 @@ function makeDocSnapshot(id: string, data: DocumentData | undefined, path?: stri
 
 function makeQuerySnapshot(rows: Array<{ path: string; data: DocumentData }>): QuerySnapshot {
   const docs = rows.map((row) =>
-    makeDocSnapshot(row.path.split("/").pop() ?? "", row.data),
+    makeDocSnapshot(row.path.split("/").pop() ?? "", row.data, row.path),
   );
   return {
     docs,
@@ -300,7 +300,7 @@ async function fetchQuery(q: QueryRef): Promise<QuerySnapshot> {
 
 export async function getDoc(ref: DocRef): Promise<DocSnapshot> {
   const data = await fetchDoc(ref.path);
-  return makeDocSnapshot(ref.id, data);
+  return makeDocSnapshot(ref.id, data, ref.path);
 }
 
 export const getDocFromServer = getDoc;
@@ -370,7 +370,7 @@ async function emitListener(listener: Listener): Promise<void> {
   try {
     if (listener.target.kind === "doc") {
       const data = await fetchDoc(listener.target.path);
-      listener.onNext(makeDocSnapshot(listener.target.id, data));
+      listener.onNext(makeDocSnapshot(listener.target.id, data, listener.target.path));
     } else {
       const q: QueryRef =
         listener.target.kind === "query"
