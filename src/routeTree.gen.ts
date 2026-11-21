@@ -24,6 +24,12 @@ import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedReceitasRouteImport } from './routes/_authenticated/receitas'
 import { Route as AuthenticatedVeiculosRouteImport } from './routes/_authenticated/veiculos'
 import { Route as AuthenticatedViagensRouteImport } from './routes/_authenticated/viagens'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiGaragemFipeConsultaRouteImport } from './routes/api/garagem/fipe-consulta'
+import { Route as ApiQuotesCurrenciesRouteImport } from './routes/api/quotes/currencies'
+import { Route as ApiQuotesStocksRouteImport } from './routes/api/quotes/stocks'
+import { Route as ApiWeatherIndexRouteImport } from './routes/api/weather/index'
+import { Route as ApiWeatherSearchIndexRouteImport } from './routes/api/weather/search/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -100,6 +106,36 @@ const AuthenticatedViagensRoute = AuthenticatedViagensRouteImport.update({
   path: '/viagens',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGaragemFipeConsultaRoute = ApiGaragemFipeConsultaRouteImport.update({
+  id: '/api/garagem/fipe-consulta',
+  path: '/api/garagem/fipe-consulta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuotesCurrenciesRoute = ApiQuotesCurrenciesRouteImport.update({
+  id: '/api/quotes/currencies',
+  path: '/api/quotes/currencies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuotesStocksRoute = ApiQuotesStocksRouteImport.update({
+  id: '/api/quotes/stocks',
+  path: '/api/quotes/stocks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWeatherIndexRoute = ApiWeatherIndexRouteImport.update({
+  id: '/api/weather/',
+  path: '/api/weather/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWeatherSearchIndexRoute = ApiWeatherSearchIndexRouteImport.update({
+  id: '/api/weather/search/',
+  path: '/api/weather/search/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,6 +152,12 @@ export interface FileRoutesByFullPath {
   '/receitas': typeof AuthenticatedReceitasRoute
   '/veiculos': typeof AuthenticatedVeiculosRoute
   '/viagens': typeof AuthenticatedViagensRoute
+  '/api/health': typeof ApiHealthRoute
+  '/api/garagem/fipe-consulta': typeof ApiGaragemFipeConsultaRoute
+  '/api/quotes/currencies': typeof ApiQuotesCurrenciesRoute
+  '/api/quotes/stocks': typeof ApiQuotesStocksRoute
+  '/api/weather/': typeof ApiWeatherIndexRoute
+  '/api/weather/search/': typeof ApiWeatherSearchIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -132,6 +174,12 @@ export interface FileRoutesByTo {
   '/receitas': typeof AuthenticatedReceitasRoute
   '/veiculos': typeof AuthenticatedVeiculosRoute
   '/viagens': typeof AuthenticatedViagensRoute
+  '/api/health': typeof ApiHealthRoute
+  '/api/garagem/fipe-consulta': typeof ApiGaragemFipeConsultaRoute
+  '/api/quotes/currencies': typeof ApiQuotesCurrenciesRoute
+  '/api/quotes/stocks': typeof ApiQuotesStocksRoute
+  '/api/weather': typeof ApiWeatherIndexRoute
+  '/api/weather/search': typeof ApiWeatherSearchIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -150,6 +198,12 @@ export interface FileRoutesById {
   '/_authenticated/receitas': typeof AuthenticatedReceitasRoute
   '/_authenticated/veiculos': typeof AuthenticatedVeiculosRoute
   '/_authenticated/viagens': typeof AuthenticatedViagensRoute
+  '/api/health': typeof ApiHealthRoute
+  '/api/garagem/fipe-consulta': typeof ApiGaragemFipeConsultaRoute
+  '/api/quotes/currencies': typeof ApiQuotesCurrenciesRoute
+  '/api/quotes/stocks': typeof ApiQuotesStocksRoute
+  '/api/weather/': typeof ApiWeatherIndexRoute
+  '/api/weather/search/': typeof ApiWeatherSearchIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -168,6 +222,12 @@ export interface FileRouteTypes {
     | '/receitas'
     | '/veiculos'
     | '/viagens'
+    | '/api/health'
+    | '/api/garagem/fipe-consulta'
+    | '/api/quotes/currencies'
+    | '/api/quotes/stocks'
+    | '/api/weather/'
+    | '/api/weather/search/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -184,6 +244,12 @@ export interface FileRouteTypes {
     | '/receitas'
     | '/veiculos'
     | '/viagens'
+    | '/api/health'
+    | '/api/garagem/fipe-consulta'
+    | '/api/quotes/currencies'
+    | '/api/quotes/stocks'
+    | '/api/weather'
+    | '/api/weather/search'
   id:
     | '__root__'
     | '/'
@@ -201,12 +267,24 @@ export interface FileRouteTypes {
     | '/_authenticated/receitas'
     | '/_authenticated/veiculos'
     | '/_authenticated/viagens'
+    | '/api/health'
+    | '/api/garagem/fipe-consulta'
+    | '/api/quotes/currencies'
+    | '/api/quotes/stocks'
+    | '/api/weather/'
+    | '/api/weather/search/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiHealthRoute: typeof ApiHealthRoute
+  ApiGaragemFipeConsultaRoute: typeof ApiGaragemFipeConsultaRoute
+  ApiQuotesCurrenciesRoute: typeof ApiQuotesCurrenciesRoute
+  ApiQuotesStocksRoute: typeof ApiQuotesStocksRoute
+  ApiWeatherIndexRoute: typeof ApiWeatherIndexRoute
+  ApiWeatherSearchIndexRoute: typeof ApiWeatherSearchIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -316,6 +394,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedViagensRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/garagem/fipe-consulta': {
+      id: '/api/garagem/fipe-consulta'
+      path: '/api/garagem/fipe-consulta'
+      fullPath: '/api/garagem/fipe-consulta'
+      preLoaderRoute: typeof ApiGaragemFipeConsultaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quotes/currencies': {
+      id: '/api/quotes/currencies'
+      path: '/api/quotes/currencies'
+      fullPath: '/api/quotes/currencies'
+      preLoaderRoute: typeof ApiQuotesCurrenciesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quotes/stocks': {
+      id: '/api/quotes/stocks'
+      path: '/api/quotes/stocks'
+      fullPath: '/api/quotes/stocks'
+      preLoaderRoute: typeof ApiQuotesStocksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/weather/': {
+      id: '/api/weather/'
+      path: '/api/weather'
+      fullPath: '/api/weather/'
+      preLoaderRoute: typeof ApiWeatherIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/weather/search/': {
+      id: '/api/weather/search/'
+      path: '/api/weather/search'
+      fullPath: '/api/weather/search/'
+      preLoaderRoute: typeof ApiWeatherSearchIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -357,6 +477,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiHealthRoute: ApiHealthRoute,
+  ApiGaragemFipeConsultaRoute: ApiGaragemFipeConsultaRoute,
+  ApiQuotesCurrenciesRoute: ApiQuotesCurrenciesRoute,
+  ApiQuotesStocksRoute: ApiQuotesStocksRoute,
+  ApiWeatherIndexRoute: ApiWeatherIndexRoute,
+  ApiWeatherSearchIndexRoute: ApiWeatherSearchIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
