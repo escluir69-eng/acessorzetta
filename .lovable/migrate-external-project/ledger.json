@@ -1,0 +1,14 @@
+{
+  "source": "github:wwwvaldomiro-oss/orion",
+  "capabilities": [
+    {"capability": "frontend-12-pages", "source": "src/pages + modules (garagem, pontoPlus, viagens)", "outcome": "migrate", "status": "in_progress", "next_action": "copiar src e converter rotas para TanStack Router"},
+    {"capability": "auth-google", "source": "Firebase Auth (Google popup)", "outcome": "migrate", "status": "in_progress", "next_action": "Lovable Cloud Google sign-in"},
+    {"capability": "database-firestore", "source": "Firestore users/{uid}/* subcoleções", "outcome": "migrate", "status": "in_progress", "next_action": "tabela de documentos JSONB + adaptador Firestore"},
+    {"capability": "storage-anexos", "source": "Firebase Storage (comprovantes, notas)", "outcome": "migrate", "status": "pending", "next_action": "bucket no Cloud Storage"},
+    {"capability": "api-cotacoes-clima-fipe", "source": "server.ts Express routes", "outcome": "migrate", "status": "pending", "next_action": "TanStack server routes /api/*"},
+    {"capability": "pluggy-open-finance", "source": "serverIntegrations.ts", "outcome": "migrate", "status": "pending", "next_action": "server functions; pedir segredos Pluggy via secret form"},
+    {"capability": "gemini-analise-notas", "source": "@google/genai", "outcome": "migrate", "status": "pending", "next_action": "Lovable AI Gateway"},
+    {"capability": "registros-usuarios", "source": "Firestore produção", "outcome": "pending", "status": "blocked", "next_action": "pedir export CSV/JSON do Firestore ao usuário após preview"},
+    {"capability": "identidades-usuarios", "source": "Firebase Auth", "outcome": "pending", "status": "blocked", "next_action": "usuários entram com Google no primeiro acesso; mapear dados pelo email"}
+  ]
+}
