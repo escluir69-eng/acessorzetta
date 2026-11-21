@@ -1,0 +1,4 @@
+CREATE POLICY "users read own attachments" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'attachments' AND (storage.foldername(name))[1] = 'users' AND (storage.foldername(name))[2] = auth.uid()::text);
+CREATE POLICY "users upload own attachments" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'attachments' AND (storage.foldername(name))[1] = 'users' AND (storage.foldername(name))[2] = auth.uid()::text);
+CREATE POLICY "users update own attachments" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'attachments' AND (storage.foldername(name))[1] = 'users' AND (storage.foldername(name))[2] = auth.uid()::text);
+CREATE POLICY "users delete own attachments" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'attachments' AND (storage.foldername(name))[1] = 'users' AND (storage.foldername(name))[2] = auth.uid()::text);

@@ -8,6 +8,13 @@
       "when": 1795298354206,
       "tag": "0000_create_firestore_docs",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795298372941,
+      "tag": "0001_migration",
+      "breakpoints": true
     }
   ]
 }
