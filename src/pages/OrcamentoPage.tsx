@@ -26,9 +26,9 @@ const emptyDoc = (): BudgetDoc => ({
   goals: [],
 });
 const normalize = (raw: Record<string, unknown>): BudgetDoc => ({
-  categories: Array.isArray(raw.categories) ? raw.categories as Category[] : emptyDoc().categories,
-  rows: Array.isArray(raw.rows) ? (raw.rows as BudgetRow[]).map(r => ({ ...r, months: Array.from({length: 12}, (_, i) => typeof r.months?.[i] === "number" ? r.months[i] : null) })) : [],
-  goals: Array.isArray(raw.goals) ? (raw.goals as Goal[]).map(g => ({ ...g, contributions: Array.from({length: 12}, (_, i) => Number(g.contributions?.[i] || 0)) })) : [],
+  categories: Array.isArray(raw["categories"]) ? raw["categories"] as Category[] : emptyDoc().categories,
+  rows: Array.isArray(raw["rows"]) ? (raw["rows"] as BudgetRow[]).map(r => ({ ...r, months: Array.from({length: 12}, (_, i) => typeof r.months?.[i] === "number" ? r.months[i] : null) })) : [],
+  goals: Array.isArray(raw["goals"]) ? (raw["goals"] as Goal[]).map(g => ({ ...g, contributions: Array.from({length: 12}, (_, i) => Number(g.contributions?.[i] || 0)) })) : [],
 });
 export function OrcamentoPage() {
   const { user, state } = useOrion();
@@ -55,7 +55,7 @@ export function OrcamentoPage() {
     setData(emptyDoc());
     const ref = doc(db, "users", user.uid, "budgetYears", String(year));
     return onSnapshot(ref, snap => {
-      setData(snap.exists() ? normalize(snap.data()) : emptyDoc());
+      setData(snap.exists() ? normalize(snap.data() ?? {}) : emptyDoc());
       setDirty(false);
       setLoading(false);
     }, error => {
@@ -141,7 +141,7 @@ export function OrcamentoPage() {
             <div className="grid gap-2 md:grid-cols-[2fr_1fr_auto]">
               <input className={fieldClass} placeholder="Ex.: cinema, revisão do veículo, supermercado" maxLength={100} value={newTitle} onChange={e=>setNewTitle(e.target.value)}/>
               <select className={fieldClass} value={newCategoryId} onChange={e=>setNewCategoryId(e.target.value)}><option value="">Selecione a categoria</option>{data.categories.map(c=><option key={c.id} value={c.id}>{c.parentId ? "↳ " : ""}{c.name}</option>)}</select>
-              <button className={btn} onClick={()=>{if(!newTitle.trim()||!newCategoryId)return toast.error("Informe título e categoria.");change(v=>({...v,rows:[...v.rows,{id:uid(),title:newTitle.trim(),categoryId:newCategoryId,months:emptyMonths(),sourceAnnualId:null}]}));setNewTitle("");}}><Plus className="mr-1 inline size-4"/>Adicionar</button>
+              <button className={btn} onClick={()=>{if(!newTitle.trim()||!newCategoryId)return void toast.error("Informe título e categoria.");change(v=>({...v,rows:[...v.rows,{id:uid(),title:newTitle.trim(),categoryId:newCategoryId,months:emptyMonths(),sourceAnnualId:null}]}));setNewTitle("");}}><Plus className="mr-1 inline size-4"/>Adicionar</button>
             </div>
           </section>
           <section className={card}>
@@ -171,7 +171,7 @@ export function OrcamentoPage() {
               <input className={fieldClass} type="number" min="0" step=".01" placeholder="Valor alvo (R$)" value={goalTarget} onChange={e=>setGoalTarget(e.target.value)}/>
               <input className={fieldClass} type="number" min="0" step=".01" placeholder="Já reservado (R$)" value={goalSaved} onChange={e=>setGoalSaved(e.target.value)}/>
               <input className={fieldClass} type="date" value={goalDate} onChange={e=>setGoalDate(e.target.value)}/>
-              <button className={btn} onClick={()=>{const target=fromReais(goalTarget);if(!goalTitle.trim()||target<=0||!goalDate)return toast.error("Preencha título, valor e prazo.");change(v=>({...v,goals:[...v.goals,{id:uid(),title:goalTitle.trim(),kind:goalType,targetCents:target,savedCents:fromReais(goalSaved),targetDate:goalDate,contributions:Array(12).fill(0)}]}));setGoalTitle("");setGoalTarget("");setGoalSaved("");}}>Criar meta</button>
+              <button className={btn} onClick={()=>{const target=fromReais(goalTarget);if(!goalTitle.trim()||target<=0||!goalDate)return void toast.error("Preencha título, valor e prazo.");change(v=>({...v,goals:[...v.goals,{id:uid(),title:goalTitle.trim(),kind:goalType,targetCents:target,savedCents:fromReais(goalSaved),targetDate:goalDate,contributions:Array(12).fill(0)}]}));setGoalTitle("");setGoalTarget("");setGoalSaved("");}}>Criar meta</button>
             </div>
           </section>
           {data.goals.map(g => <section key={g.id} className={card}>

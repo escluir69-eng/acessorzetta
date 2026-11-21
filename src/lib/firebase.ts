@@ -313,7 +313,7 @@ async function upsertDoc(path: string, data: DocumentData): Promise<void> {
     {
       path,
       user_id: ownerUid(),
-      data,
+      data: data as unknown as import("@/integrations/supabase/types").Json,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "path" },
@@ -426,10 +426,11 @@ export function onSnapshot(
 ): () => void;
 export function onSnapshot(
   target: DocRef | QueryRef | CollectionRef,
-  onNext: SnapshotCallback,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onNext: (snap: any) => void,
   onError?: (error: Error) => void,
 ): () => void {
-  const listener: Listener = { target, onNext, onError };
+  const listener: Listener = { target, onNext: onNext as SnapshotCallback, onError };
   listeners.add(listener);
   void emitListener(listener);
   const uid = currentUser?.uid;

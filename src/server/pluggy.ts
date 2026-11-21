@@ -4,6 +4,7 @@
  * firestore_docs no caminho users/{uid}/pluggySettings/pluggy{slot}.
  */
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import type { Json } from "@/integrations/supabase/types";
 
 type Slot = "1" | "2";
 
@@ -77,7 +78,7 @@ async function writeSettings(uid: string, slot: Slot, data: PluggySettingsData):
     {
       path: settingsPath(uid, slot),
       user_id: uid,
-      data,
+      data: data as unknown as Json,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "path" },
@@ -446,7 +447,7 @@ async function upsertUserDoc(uid: string, sub: string, id: string, data: Record<
         ownerId: uid,
         updatedAt: now,
         createdAt: (prev["createdAt"] as string | undefined) ?? now,
-      },
+      } as unknown as Json,
       updated_at: now,
     },
     { onConflict: "path" },
