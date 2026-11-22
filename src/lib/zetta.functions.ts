@@ -23,3 +23,12 @@ export const synchronizePluggy = createServerFn({ method: 'POST' }).middleware([
   if (!response.ok) throw new Error(result.error ?? 'Não foi possível sincronizar.');
   return { accounts: result.accounts ?? 0, transactions: result.transactions ?? 0 };
 });
+
+export const testSavedPluggyConnection = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  const { handlePluggyConnectToken } = await import('@/server/pluggy');
+  const response = await handlePluggyConnectToken(context.userId, '1');
+  const result = await response.json() as { error?: string };
+  if (!response.ok) throw new Error(result.error ?? 'Não foi possível validar a conexão salva.');
+  // The banking session token must never be returned by a health check.
+  return { ok: true, status: response.status };
+});
