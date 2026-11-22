@@ -290,3 +290,7 @@ button, input, select, textarea { font: inherit; }
  .zetta-app main [class*="grid-cols-2"] { min-width: 0; }
  .zetta-app main .annual-print-sheet > div:first-child { max-width: 100%; }
 }
+
+.dark .zetta-settings nav button[aria-pressed="true"], .dark .zetta-settings nav .text-primary { color: var(--brand-ice); }
+.dark .zetta-settings nav button { color: var(--muted-foreground); }
+.dark .zetta-settings nav button.border-l-2 { color: var(--brand-ice); border-color: var(--gold); }
