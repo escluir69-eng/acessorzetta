@@ -15,6 +15,13 @@
       "when": 1795298372941,
       "tag": "0001_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795344120759,
+      "tag": "0002_zetta_user_settings",
+      "breakpoints": true
     }
   ]
 }
