@@ -11,6 +11,7 @@ import {
   Radio,
 } from "lucide-react";
 import { toast } from "sonner";
+import { BankAvatar } from "@/components/BankAvatar";
 import { AppShell } from "@/components/layout/AppShell";
 import { PluggySettings } from "@/components/PluggySettings";
 import { useOrion } from "@/store/orionContext";
@@ -192,12 +193,7 @@ export function CarteiraPage() {
               state.banks.map((b) => (
                 <div key={b.id} className="flex items-center justify-between gap-3 py-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div
-                      className="grid size-10 shrink-0 place-items-center rounded-xl text-xs font-extrabold text-white"
-                      style={{ background: b.color }}
-                    >
-                      {b.institution.slice(0, 2).toUpperCase()}
-                    </div>
+                    <BankAvatar institution={b.institution} />
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-[#0c1928]">{b.name}</div>
                       <div className="truncate text-xs text-[#52616a]">

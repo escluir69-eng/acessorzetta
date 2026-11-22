@@ -6,12 +6,12 @@ export const Route = createFileRoute("/")({
   },
   head: () => ({
     meta: [
-      { title: "Órion — Gestão Financeira & Pessoal" },
+      { title: "Zetta — Gestão Financeira & Pessoal" },
       {
         name: "description",
         content: "Gestão financeira pessoal completa: painel, receitas, despesas, carteira e agenda.",
       },
-      { property: "og:title", content: "Órion — Gestão Financeira & Pessoal" },
+      { property: "og:title", content: "Zetta — Gestão Financeira & Pessoal" },
       {
         property: "og:description",
         content: "Gestão financeira pessoal completa: painel, receitas, despesas, carteira e agenda.",

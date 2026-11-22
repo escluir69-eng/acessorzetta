@@ -137,11 +137,7 @@ export function AgendaAlarmManager() {
   const stopAudioRef = useRef<() => void>(() => {});
   const firedLocalKeysRef = useRef<Set<string>>(new Set());
 
-  // Apply light/dark theme globally from user AgendaSettings
-  useEffect(() => {
-    const isDark = state.agendaSettings?.themeMode === "dark";
-    document.documentElement.classList.toggle("dark", isDark);
-  }, [state.agendaSettings?.themeMode]);
+  // Global appearance is owned by ZettaPreferences; alarms do not change it.
 
   const stopSound = useCallback(() => {
     stopAudioRef.current();
@@ -154,7 +150,7 @@ export function AgendaAlarmManager() {
       if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
       try {
         const reg = await navigator.serviceWorker?.getRegistration();
-        const title = `Despertador Órion: ${alarm.name || "Alarme"}`;
+        const title = `Despertador Zetta: ${alarm.name || "Alarme"}`;
         const body = `Horário programado ${alarm.time}. Toque para adiar ou desligar.`;
         if (reg && "showNotification" in reg) {
           await reg.showNotification(title, {
