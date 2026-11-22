@@ -30,3 +30,7 @@ use the editor.
 <!-- LOVABLE:END -->
 
 - Preserve original imported records in an owner-scoped, content-hash-keyed import archive before additive conversion into existing document collections; this retains unmapped history and prevents overwriting existing records.
+
+- ZettaPreferences owns global theme and accent state; persist preferences in owner-scoped user_settings and private avatar paths to avoid competing theme writers.
+- Keep banking credentials encrypted in the existing owner-scoped vault; settings contain only safe preferences, never plaintext banking secrets.
+- Use protected TanStack server functions for new app-internal integration calls and preserve existing import document identifiers for compatibility.

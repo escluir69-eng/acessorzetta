@@ -18,6 +18,8 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useZettaPreferences } from "@/components/ZettaPreferences";
 import { BrandLogo } from "@/components/BrandLogos";
 import { GlobalSearchModal } from "@/components/GlobalSearchModal";
 import { useOrion } from "@/store/orionContext";
@@ -41,11 +43,12 @@ const PERSONAL_NAV = [
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { state, signOutUser } = useOrion();
+  const { settings, avatar } = useZettaPreferences();
   const location = useLocation();
 
   const renderGroup = (title: string, items: typeof FINANCE_NAV) => (
     <div className="space-y-1">
-      <div className="px-3 pt-4 pb-1 text-[11px] font-semibold tracking-[0.09em] text-[#9eb2bd]">
+      <div className="px-3 pt-4 pb-1 text-[11px] font-semibold text-brand-ice/60">
         {title}
       </div>
       {items.map((item) => {
@@ -86,9 +89,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           data-active={location.pathname === "/perfil"}
           className="orion-nav-link flex items-center gap-3 px-3 py-2 text-sm whitespace-nowrap"
         >
-          {state.profile.photoUrl ? (
+          {(avatar || state.profile.photoUrl) ? (
             <img
-              src={state.profile.photoUrl}
+              src={avatar || state.profile.photoUrl}
               alt={state.profile.name}
               referrerPolicy="no-referrer"
               className="size-7 shrink-0 rounded-full object-cover"
@@ -97,21 +100,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <UserRound className="size-4 shrink-0" />
           )}
           <div className="min-w-0 flex-1">
-            <div className="truncate font-semibold text-white">{state.profile.name}</div>
+            <div className="truncate font-semibold text-white">{settings?.preferred_name || settings?.full_name || state.profile.name}</div>
             <div className="truncate text-[11px] text-white/70">
               {state.profile.city} · {state.profile.state}
             </div>
           </div>
         </Link>
 
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => void signOutUser()}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-1.5 text-xs font-medium text-[#9eb2bd] transition-colors hover:bg-white/10 hover:text-white"
         >
           <LogOut className="size-3.5 shrink-0" />
           <span>Sair da conta</span>
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -150,7 +153,7 @@ export function AppShell({
   }, [hideGlobalSearch]);
 
   return (
-    <div className="flex min-h-screen bg-[#f7f8fa] text-[#0c1928] dark:bg-[#08121d] dark:text-slate-100">
+    <div className="zetta-app flex min-h-screen max-w-full bg-background text-foreground">
       {/* Desktop Sidebar */}
       <aside className="orion-sidebar no-print hidden w-72 shrink-0 flex-col p-5 md:sticky md:top-0 md:flex md:h-screen">
         <SidebarContent />
@@ -164,14 +167,14 @@ export function AppShell({
             onClick={() => setDrawerOpen(false)}
           />
           <aside className="orion-sidebar relative z-10 flex w-72 max-w-[85vw] flex-col p-5 shadow-2xl">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => setDrawerOpen(false)}
               aria-label="Fechar menu"
-              className="absolute top-4 right-4 grid size-9 place-items-center rounded-lg text-white/80 hover:bg-white/10"
+              className="absolute top-4 right-4 grid size-9 place-items-center rounded-lg text-brand-ice hover:bg-brand-ice/10"
             >
               <X className="size-5" />
-            </button>
+            </Button>
             <SidebarContent onNavigate={() => setDrawerOpen(false)} />
           </aside>
         </div>
@@ -181,14 +184,14 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="no-print sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-[#dce2e6] bg-white/90 px-4 py-3 backdrop-blur-md dark:border-[#233c53] dark:bg-[#0e1e2e]/95 md:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => setDrawerOpen(true)}
               aria-label="Abrir menu"
               className="grid size-10 shrink-0 place-items-center rounded-lg border border-[#dce2e6] text-[#0c1928] hover:bg-[#f0f3f5] dark:border-[#233c53] dark:text-slate-100 dark:hover:bg-[#152b3f] md:hidden"
             >
               <Menu className="size-5" />
-            </button>
+            </Button>
             <div className="min-w-0">
               <h1 className="orion-page-title truncate text-xl font-semibold text-[#0c1928] dark:text-slate-100 md:text-2xl">
                 {title}
@@ -199,27 +202,27 @@ export function AppShell({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex max-w-full flex-wrap items-center gap-2">
             {!hideGlobalSearch && (
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setSearchOpen(true)}
                 aria-label="Busca global (Ctrl+K)"
                 className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#dce2e6] bg-[#f7f8fa] px-2.5 text-xs text-[#52616a] transition-colors hover:border-[#b99555] hover:bg-white hover:text-[#0c1928] dark:border-[#233c53] dark:bg-[#132537] dark:text-slate-300 dark:hover:bg-[#152b3f] dark:hover:text-white lg:w-64"
               >
                 <Search className="size-3.5 shrink-0 text-[#173d4a] dark:text-[#b99555]" />
-                <span className="hidden truncate sm:inline">Buscar no Órion...</span>
+                <span className="hidden truncate sm:inline">Buscar na Zetta...</span>
                 <kbd className="ml-auto hidden rounded border border-[#dce2e6] bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#52616a] dark:border-[#2b4761] dark:bg-[#0e1e2e] dark:text-slate-300 sm:inline">
                   Ctrl+K
                 </kbd>
-              </button>
+              </Button>
             )}
 
-            {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+            {actions && <div className="flex max-w-full flex-wrap items-center gap-2">{actions}</div>}
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1440px] flex-1 p-4 pb-24 md:p-8 md:pb-10">
+        <main className="mx-auto min-w-0 w-full max-w-[1440px] flex-1 p-4 pb-24 md:p-8 md:pb-10">
           {children}
         </main>
       </div>

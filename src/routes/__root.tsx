@@ -14,6 +14,7 @@ import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { OrionProvider } from "@/store/orionStore";
+import { ZettaPreferences } from "@/components/ZettaPreferences";
 import { AgendaAlarmManager } from "@/components/agenda/AgendaAlarmManager";
 
 function NotFoundComponent() {
@@ -81,13 +82,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Órion — Gestão Financeira & Pessoal" },
+      { title: "Zetta — Gestão Financeira & Pessoal" },
       {
         name: "description",
         content:
           "Gestão financeira pessoal: receitas, contratos, despesas, carteira, cotações, agenda, compras, veículos e viagens.",
       },
-      { property: "og:title", content: "Órion — Gestão Financeira & Pessoal" },
+      { property: "og:title", content: "Zetta — Gestão Financeira & Pessoal" },
       {
         property: "og:description",
         content:
@@ -98,7 +99,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -133,8 +134,10 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <OrionProvider>
+        <ZettaPreferences>
         <Outlet />
         <AgendaAlarmManager />
+        </ZettaPreferences>
         <Toaster richColors position="top-right" />
       </OrionProvider>
     </QueryClientProvider>

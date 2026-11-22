@@ -35,6 +35,63 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          accent_color: string
+          alexa_linked: boolean
+          avatar_url: string
+          document: string
+          full_name: string
+          pix_key: string
+          pix_key_type: string
+          pix_merchant_city: string
+          pix_merchant_name: string
+          pix_txid_prefix: string
+          pluggy_auto_sync: boolean
+          preferred_name: string
+          theme: string
+          updated_at: string
+          user_id: string
+          whatsapp: string
+        }
+        Insert: {
+          accent_color?: string
+          alexa_linked?: boolean
+          avatar_url?: string
+          document?: string
+          full_name?: string
+          pix_key?: string
+          pix_key_type?: string
+          pix_merchant_city?: string
+          pix_merchant_name?: string
+          pix_txid_prefix?: string
+          pluggy_auto_sync?: boolean
+          preferred_name?: string
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string
+        }
+        Update: {
+          accent_color?: string
+          alexa_linked?: boolean
+          avatar_url?: string
+          document?: string
+          full_name?: string
+          pix_key?: string
+          pix_key_type?: string
+          pix_merchant_city?: string
+          pix_merchant_name?: string
+          pix_txid_prefix?: string
+          pluggy_auto_sync?: boolean
+          preferred_name?: string
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

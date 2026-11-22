@@ -4,9 +4,9 @@ import { PerfilPage } from "@/pages/PerfilPage";
 export const Route = createFileRoute("/_authenticated/perfil")({
   head: () => ({
     meta: [
-      { title: "Perfil — Órion" },
+      { title: "Perfil — Zetta" },
       { name: "description", content: "Dados do perfil e preferências da conta." },
-      { property: "og:title", content: "Perfil — Órion" },
+      { property: "og:title", content: "Perfil — Zetta" },
       { property: "og:description", content: "Dados do perfil e preferências da conta." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

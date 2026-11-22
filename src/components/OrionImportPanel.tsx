@@ -130,11 +130,11 @@ export function OrionImportPanel() {
           <div className="flex items-center gap-2">
             <FileJson className="size-5 text-[#173d4a]" />
             <h2 className="text-lg font-semibold text-[#0c1928]">
-              Importar Dados Financeiros (Órion `orion-personal-data` v1)
+              Importar dados financeiros
             </h2>
           </div>
           <p className="text-xs text-[#52616a]">
-            Restaura o histórico completo a partir de um arquivo JSON exportado do Órion, com
+            Restaura o histórico completo a partir de um arquivo JSON compatível, com
             prévia detalhada, preservação de IDs, ordem por dependência e zero duplicação em
             reimportações.
           </p>

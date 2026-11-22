@@ -1,29 +1,73 @@
 @import "tailwindcss" source(none);
-@source "../src";
 @import "tw-animate-css";
+@source "../src";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-brand-night: var(--brand-night);
+  --color-brand-petrol: var(--brand-petrol);
+  --color-brand-gold: var(--gold);
+  --color-brand-ivory: var(--brand-ivory);
+  --color-brand-ice: var(--brand-ice);
+  --color-accent-user: var(--accent-user);
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 :root {
+  --brand-night: #0C1928;
+  --brand-petrol: #173D4A;
+  --brand-ivory: #E7E1D5;
+  --brand-ice: #F7F8FA;
+  --accent-user: #0C1928;
+  --google-bg: #FFFFFF;
+  --google-border: #747775;
+  --google-text: #1F1F1F;
+  --bank-nubank: #820ad1;
+  --bank-itau: #ec7000;
+  --bank-bradesco: #cc092f;
+  --bank-bb: #f9dd16;
+  --bank-santander: #ec0000;
+  --bank-inter: #ff7a00;
+  --bank-caixa: #005ca9;
+  --bank-xp: #171717;
+  --bank-btg: #153c66;
+  --bank-mp: #00b1ea;
   --orion-night: #0c1928;
   --orion-petrol: #173d4a;
   --orion-gold: #b99555;
   --orion-ivory: #e7e1d5;
   --orion-ice: #f7f8fa;
-  --radius: 0.75rem;
+  --radius: 0.5rem;
   --background: #f7f8fa;
   --foreground: #0c1928;
   --card: #ffffff;
   --card-foreground: #0c1928;
   --popover: #ffffff;
   --popover-foreground: #0c1928;
-  --primary: #173d4a;
+  --primary: #0c1928;
   --primary-foreground: #ffffff;
   --secondary: #edf1f3;
   --secondary-foreground: #173d4a;
@@ -43,6 +87,9 @@
 }
 
 .dark {
+  --google-bg: #131314;
+  --google-border: #8E918F;
+  --google-text: #E3E3E3;
   --background: #08121d;
   --foreground: #f1f5f9;
   --card: #0e1e2e;
@@ -80,7 +127,7 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.015em;
+    letter-spacing: 0;
   }
   :where(button, a, input, select, textarea, [role="button"]):focus-visible {
     outline: 2px solid var(--ring);
@@ -192,3 +239,58 @@
     margin-bottom: 10px !important;
   }
 }
+
+/* Zetta application surfaces */
+html, body { max-width: 100%; }
+* { letter-spacing: 0; }
+button, input, select, textarea { font: inherit; }
+.zetta-input { width: 100%; min-width: 0; height: 46px; border: 1px solid var(--input); border-radius: 6px; background: var(--background); color: var(--foreground); padding: 0 12px; font-size: 14px; }
+.zetta-input.pl-10 { padding-left: 40px; }
+.zetta-input.pr-12 { padding-right: 48px; }
+.zetta-field { display: block; min-width: 0; font-size: 13px; font-weight: 600; color: var(--foreground); }
+.zetta-field input, .zetta-field select { font-weight: 400; }
+.zetta-input::placeholder { color: var(--muted-foreground); }
+.zetta-login-story { overflow: hidden; }
+.zetta-home { max-height: 530px; max-width: 680px; aspect-ratio: 1; margin-top: 4px; mix-blend-mode: screen; }
+.zetta-micro { background: color-mix(in srgb, var(--brand-petrol) 55%, transparent); }
+.google-button { background: var(--google-bg); border-color: var(--google-border); color: var(--google-text); padding-inline: 12px; gap: 10px; font-size: 14px; }
+.google-button:hover { background: var(--google-bg); filter: brightness(.97); }
+.zetta-settings section { padding-block: 24px; }
+.zetta-settings section + section { border-top: 1px solid var(--border); }
+.zetta-settings h2 { font-size: 23px; margin-bottom: 20px; }
+.zetta-settings h3 { font-family: var(--font-sans); font-size: 14px; font-weight: 700; }
+.zetta-swatch { background: var(--swatch); }
+.bank-avatar { color: var(--brand-ice); }
+.bank-nubank { background: var(--bank-nubank); }.bank-itau { background: var(--bank-itau); }.bank-bradesco { background: var(--bank-bradesco); }.bank-bb { background: var(--bank-bb); color: var(--brand-petrol); }.bank-santander { background: var(--bank-santander); }.bank-inter { background: var(--bank-inter); }.bank-caixa { background: var(--bank-caixa); }.bank-xp { background: var(--bank-xp); }.bank-btg { background: var(--bank-btg); }.bank-mp { background: var(--bank-mp); color: var(--brand-night); }.bank-default { background: var(--brand-petrol); }
+@media (min-width: 1024px) { .zetta-login { min-height: 820px; height: 100dvh; } }
+@media (max-width: 1023px) { .zetta-login-story { min-height: 0; } .zetta-home { max-height: 340px; max-width: 440px; } }
+@media (max-width: 639px) { .zetta-home { max-height: 230px; } .zetta-login-story h1 { font-size: 26px; } .zetta-login-story .zetta-micro { min-height: 58px; flex-direction: row; } .zetta-settings h2 { font-size: 21px; } }
+
+.zetta-app main .grid > *, .zetta-app main section, .zetta-app main form { min-width: 0; }
+.zetta-app main [class*="overflow-x-auto"] { width: 100%; max-width: 100%; }
+.zetta-app main input, .zetta-app main select { min-width: 0; max-width: 100%; }
+.zetta-app main [class*="rounded-xl"] { border-radius: 8px; }
+.zetta-app main [class*="rounded-2xl"] { border-radius: 8px; }
+.zetta-home { flex: 1; min-height: 0; margin-block: auto; }
+.zetta-login-story > div:last-child { margin-top: 0; }
+/* Compatibility surfaces from the imported app now follow semantic colors. */
+.zetta-app [class~="bg-white"] { background-color: var(--card); }
+.zetta-app [class~="bg-[#f7f8fa]"] { background-color: var(--background); }
+.zetta-app [class~="bg-[#edf1f3]"], .zetta-app [class~="bg-[#f0f3f5]"], .zetta-app [class~="bg-[#fafbfc]"] { background-color: var(--muted); }
+.zetta-app [class~="text-[#0c1928]"] { color: var(--foreground); }
+.zetta-app [class~="text-[#52616a]"], .zetta-app [class~="text-[#7a8994]"] { color: var(--muted-foreground); }
+.zetta-app [class~="border-[#dce2e6]"], .zetta-app [class~="border-[#edf1f3]"], .zetta-app [class~="border-[#cbd3d8]"] { border-color: var(--border); }
+.zetta-app [class~="bg-[#173d4a]"] { background-color: var(--primary); color: var(--primary-foreground); }
+.zetta-app [class~="text-[#173d4a]"] { color: var(--primary); }
+.zetta-app header { background: var(--card); border-color: var(--border); }
+.zetta-app .zetta-settings button { opacity: 1; }
+@media (max-width: 639px) {
+ .zetta-app main .grid > * { max-width: 100%; }
+ .zetta-app main [class*="fixed"] input[type="date"] { font-size: 12px; }
+ .zetta-app main [class*="grid-cols-2"] { min-width: 0; }
+ .zetta-app main .annual-print-sheet > div:first-child { max-width: 100%; }
+}
+
+.dark .zetta-settings nav button[aria-pressed="true"], .dark .zetta-settings nav .text-primary { color: var(--brand-ice); }
+.dark .zetta-settings nav button { color: var(--muted-foreground); }
+.dark .zetta-settings nav button.border-l-2 { color: var(--brand-ice); border-color: var(--gold); }

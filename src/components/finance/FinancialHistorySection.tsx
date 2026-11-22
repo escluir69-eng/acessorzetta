@@ -270,7 +270,7 @@ export function FinancialHistorySection({ direction, rows }: FinancialHistorySec
       {/* Print-only summary banner */}
       <div className="only-print mb-3 border-b border-[#0c1928]/20 pb-2">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-bold text-[#0c1928]">Órion — {sectionTitle}</h2>
+          <h2 className="text-lg font-bold text-[#0c1928]">Zetta — {sectionTitle}</h2>
           <span className="tabular-nums text-sm font-bold text-[#0c1928]">
             Total ({totals.distinct}): {formatBRL(totals.actualCents)}
           </span>

@@ -11,6 +11,7 @@ import {
   Radio,
 } from "lucide-react";
 import { toast } from "sonner";
+import { BankAvatar } from "@/components/BankAvatar";
 import { AppShell } from "@/components/layout/AppShell";
 import { PluggySettings } from "@/components/PluggySettings";
 import { useOrion } from "@/store/orionContext";
@@ -160,7 +161,7 @@ export function CarteiraPage() {
       title="Carteira"
       subtitle="Contas bancárias, cartões de crédito e movimentações consolidadas"
       actions={
-        <div className="flex items-center gap-2">
+        <div className="flex max-w-full flex-wrap items-center gap-2">
           <PluggySettings />
           <button
             type="button"
@@ -179,9 +180,9 @@ export function CarteiraPage() {
         </div>
       }
     >
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Bank Accounts */}
-        <section className="rounded-xl border border-[#dce2e6] bg-white p-5">
+        <section className="min-w-0 rounded-lg border border-border bg-card p-5">
           <h2 className="text-lg font-semibold text-[#0c1928]">Contas Bancárias</h2>
           <div className="mt-3 divide-y divide-[#edf1f3]">
             {state.banks.length === 0 ? (
@@ -192,12 +193,7 @@ export function CarteiraPage() {
               state.banks.map((b) => (
                 <div key={b.id} className="flex items-center justify-between gap-3 py-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div
-                      className="grid size-10 shrink-0 place-items-center rounded-xl text-xs font-extrabold text-white"
-                      style={{ background: b.color }}
-                    >
-                      {b.institution.slice(0, 2).toUpperCase()}
-                    </div>
+                    <BankAvatar institution={b.institution} />
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-[#0c1928]">{b.name}</div>
                       <div className="truncate text-xs text-[#52616a]">
@@ -215,7 +211,7 @@ export function CarteiraPage() {
         </section>
 
         {/* Interactive Card Wallet */}
-        <section className="rounded-xl border border-[#dce2e6] bg-white p-5">
+        <section className="min-w-0 rounded-lg border border-border bg-card p-5">
           <h2 className="text-lg font-semibold text-[#0c1928]">Cartões Cadastrados</h2>
           {activeCard ? (
             <div className="mt-4 space-y-4">
@@ -235,7 +231,7 @@ export function CarteiraPage() {
                 </button>
 
                 <div
-                  className="relative flex-1 overflow-hidden rounded-2xl p-5 text-white shadow-md"
+                  className="relative min-w-0 flex-1 overflow-hidden rounded-lg p-3 text-brand-ice shadow-md"
                   style={{ background: getCardDesign(activeCard).gradient }}
                 >
                   <div className="flex items-start justify-between">
@@ -278,7 +274,7 @@ export function CarteiraPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
                 <div className="rounded-lg border border-[#edf1f3] bg-[#f7f8fa] p-2.5">
                   <div className="text-[#52616a]">Limite</div>
                   <div className="tabular-nums mt-1 font-bold text-[#0c1928]">
@@ -312,8 +308,8 @@ export function CarteiraPage() {
         </section>
 
         {/* Transactions */}
-        <section className="rounded-xl border border-[#dce2e6] bg-white p-5">
-          <div className="mb-3 flex items-center justify-between gap-2">
+        <section className="min-w-0 rounded-lg border border-border bg-card p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-[#0c1928]">Movimentações</h2>
             <div className="flex gap-1 rounded-lg bg-[#f0f3f5] p-0.5 text-xs">
               {(
@@ -348,7 +344,7 @@ export function CarteiraPage() {
                 }
               }}
               placeholder="Filtrar transações por descrição, conta ou categoria..."
-              className="h-8 flex-1 rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs"
+              className="h-8 min-w-0 flex-1 rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs"
             />
             {txSearch && (
               <button

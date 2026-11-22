@@ -322,7 +322,7 @@ export function PainelPage() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <div className="text-[11px] font-bold tracking-[0.14em] text-[#b99555] uppercase">
-                Órion · Assistente Pessoal e Financeiro
+                Zetta · Assistente Pessoal e Financeiro
               </div>
               <h2 className="mt-1 text-2xl font-bold text-[#0c1928]">
                 Relatório Financeiro Consolidado — Competência {currentMonth}
