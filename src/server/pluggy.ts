@@ -321,7 +321,7 @@ export async function handlePluggyConnectToken(uid: string, rawSlot: string): Pr
     const result = await pluggyJson("/connect_token", key, {
       method: "POST",
       body: JSON.stringify({
-        options: { clientUserId: `orion:${uid}:${s}`, avoidDuplicates: true },
+        options: { clientUserId: `orion:${uid}:${s}` },
       }),
     });
     return Response.json({ connectToken: result["accessToken"] });
@@ -341,7 +341,8 @@ export async function handlePluggyItem(uid: string, rawSlot: string, request: Re
     }
     const { key } = await keyFor(uid, s);
     const item = await pluggyJson(`/items/${encodeURIComponent(itemId)}`, key);
-    if (item["clientUserId"] !== `orion:${uid}:${s}`) {
+    const owner = item["clientUserId"];
+    if (owner != null && owner !== "" && owner !== `orion:${uid}:${s}`) {
       return Response.json(
         { error: "Item não pertence a este usuário e conexão" },
         { status: 401 },
