@@ -16,5 +16,10 @@ Origem: github.com/wwwvaldomiro-oss/orion (React 19 + Express + Firebase/Firesto
 - [ ] 11. Handoff: pedir export de dados do Firestore (CSV/JSON) ao usuário
 
 ## Bloqueios
-- Dados existentes: aguardando export do Firestore pelo usuário
+- Dados existentes: export SQL recebido; importação em andamento
 - Credenciais Pluggy: pedir via secret form na verificação
+
+## Importação de dados recebidos
+- [ ] Converter e preservar os 880 registros do arquivo SQL para a conta correspondente
+- [ ] Gravar sem sobrescrever dados existentes e conferir totais e vínculos
+- [ ] Verificar receitas, despesas e orçamento na conta autenticada
