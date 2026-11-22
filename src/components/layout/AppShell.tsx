@@ -107,7 +107,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         </Link>
 
-        <Button
+        <Button variant="ghost"
           type="button"
           onClick={() => void signOutUser()}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-1.5 text-xs font-medium text-[#9eb2bd] transition-colors hover:bg-white/10 hover:text-white"
@@ -167,11 +167,11 @@ export function AppShell({
             onClick={() => setDrawerOpen(false)}
           />
           <aside className="orion-sidebar relative z-10 flex w-72 max-w-[85vw] flex-col p-5 shadow-2xl">
-            <Button
+            <Button variant="ghost"
               type="button"
               onClick={() => setDrawerOpen(false)}
               aria-label="Fechar menu"
-              className="absolute top-4 right-4 grid size-9 place-items-center rounded-lg text-white/80 hover:bg-white/10"
+              className="absolute top-4 right-4 grid size-9 place-items-center rounded-lg text-brand-ice hover:bg-brand-ice/10"
             >
               <X className="size-5" />
             </Button>
@@ -184,7 +184,7 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="no-print sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-[#dce2e6] bg-white/90 px-4 py-3 backdrop-blur-md dark:border-[#233c53] dark:bg-[#0e1e2e]/95 md:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <Button
+            <Button variant="ghost"
               type="button"
               onClick={() => setDrawerOpen(true)}
               aria-label="Abrir menu"
@@ -204,7 +204,7 @@ export function AppShell({
 
           <div className="flex max-w-full flex-wrap items-center gap-2">
             {!hideGlobalSearch && (
-              <Button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setSearchOpen(true)}
                 aria-label="Busca global (Ctrl+K)"

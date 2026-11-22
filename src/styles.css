@@ -265,3 +265,28 @@ button, input, select, textarea { font: inherit; }
 @media (min-width: 1024px) { .zetta-login { min-height: 820px; height: 100dvh; } }
 @media (max-width: 1023px) { .zetta-login-story { min-height: 0; } .zetta-home { max-height: 340px; max-width: 440px; } }
 @media (max-width: 639px) { .zetta-home { max-height: 230px; } .zetta-login-story h1 { font-size: 26px; } .zetta-login-story .zetta-micro { min-height: 58px; flex-direction: row; } .zetta-settings h2 { font-size: 21px; } }
+
+.zetta-app main .grid > *, .zetta-app main section, .zetta-app main form { min-width: 0; }
+.zetta-app main [class*="overflow-x-auto"] { width: 100%; max-width: 100%; }
+.zetta-app main input, .zetta-app main select { min-width: 0; max-width: 100%; }
+.zetta-app main [class*="rounded-xl"] { border-radius: 8px; }
+.zetta-app main [class*="rounded-2xl"] { border-radius: 8px; }
+.zetta-home { flex: 1; min-height: 0; margin-block: auto; }
+.zetta-login-story > div:last-child { margin-top: 0; }
+/* Compatibility surfaces from the imported app now follow semantic colors. */
+.zetta-app [class~="bg-white"] { background-color: var(--card); }
+.zetta-app [class~="bg-[#f7f8fa]"] { background-color: var(--background); }
+.zetta-app [class~="bg-[#edf1f3]"], .zetta-app [class~="bg-[#f0f3f5]"], .zetta-app [class~="bg-[#fafbfc]"] { background-color: var(--muted); }
+.zetta-app [class~="text-[#0c1928]"] { color: var(--foreground); }
+.zetta-app [class~="text-[#52616a]"], .zetta-app [class~="text-[#7a8994]"] { color: var(--muted-foreground); }
+.zetta-app [class~="border-[#dce2e6]"], .zetta-app [class~="border-[#edf1f3]"], .zetta-app [class~="border-[#cbd3d8]"] { border-color: var(--border); }
+.zetta-app [class~="bg-[#173d4a]"] { background-color: var(--primary); color: var(--primary-foreground); }
+.zetta-app [class~="text-[#173d4a]"] { color: var(--primary); }
+.zetta-app header { background: var(--card); border-color: var(--border); }
+.zetta-app .zetta-settings button { opacity: 1; }
+@media (max-width: 639px) {
+ .zetta-app main .grid > * { max-width: 100%; }
+ .zetta-app main [class*="fixed"] input[type="date"] { font-size: 12px; }
+ .zetta-app main [class*="grid-cols-2"] { min-width: 0; }
+ .zetta-app main .annual-print-sheet > div:first-child { max-width: 100%; }
+}

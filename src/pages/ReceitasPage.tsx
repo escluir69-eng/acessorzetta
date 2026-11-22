@@ -431,7 +431,7 @@ export function ReceitasPage() {
       title="Receitas & Contratos"
       subtitle="Fontes de renda, grade anual de recebíveis, contratos parcelados e faturas Pix"
       actions={
-        <div className="flex items-center gap-2">
+        <div className="flex max-w-full flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setSourceOpen(true)}
@@ -518,15 +518,15 @@ export function ReceitasPage() {
 
         {/* Tab 1: Sources & Entries */}
         {tab === "sources" && (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-xl border border-[#dce2e6] bg-white p-5">
+          <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="min-w-0 rounded-lg border border-border bg-card p-5">
               <h2 className="text-base font-semibold text-[#0c1928]">Fontes Cadastradas</h2>
               <div className="mt-3 divide-y divide-[#edf1f3]">
                 {state.revenueSources.map((s) => (
                   <div key={s.id} className="py-3 text-sm">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-[#0c1928]">{s.title}</span>
-                      <span className="tabular-nums font-bold text-[#173d4a]">
+                      <span className="min-w-0 flex-1 break-words font-semibold text-foreground">{s.title}</span>
+                      <span className="tabular-nums shrink-0 font-bold text-primary">
                         {formatBRL(s.expectedCents)}
                       </span>
                     </div>
@@ -681,7 +681,7 @@ export function ReceitasPage() {
 
         {/* Tab 3: Installment Contracts + PDF/Pix Invoice */}
         {tab === "contracts" && (
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-3">
               {state.revenueContracts.map((c) => {
                 const status = derivedContractStatus(c, state.revenueEntries, today);
