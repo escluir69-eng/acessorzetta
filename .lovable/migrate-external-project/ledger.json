@@ -8,7 +8,7 @@
     {"capability": "api-cotacoes-clima-fipe", "source": "server.ts Express routes", "outcome": "migrate", "status": "verified", "next_action": "rotas /api/quotes, /api/sgs, /api/weather, /api/garagem portadas"},
     {"capability": "pluggy-open-finance", "source": "serverIntegrations.ts", "outcome": "migrate", "status": "implemented", "next_action": "rotas /api/pluggy prontas com credenciais criptografadas; falta o usuário informar as chaves Pluggy para verificar ao vivo"},
     {"capability": "gemini-analise-notas", "source": "@google/genai", "outcome": "migrate", "status": "implemented", "next_action": "OCR de imagens via Lovable AI Gateway; OCR de PDF retorna 422 explicativo (não suportado)"},
-    {"capability": "registros-usuarios", "source": "Firestore produção", "outcome": "pending", "status": "blocked", "next_action": "pedir export CSV/JSON do Firestore ao usuário após preview"},
-    {"capability": "identidades-usuarios", "source": "Firebase Auth", "outcome": "pending", "status": "blocked", "next_action": "usuários entram com Google no primeiro acesso; mapear dados pelo email"}
+    {"capability": "registros-usuarios", "source": "export_dados_orion.sql", "outcome": "migrate", "status": "verified", "next_action": "880 registros originais preservados em arquivo privado por usuário; 380 documentos convertidos e verificados sem sobrescrita. Receitas, despesas, orçamento e carteira conferidos na sessão do proprietário. Audit log e referências Pluggy preservados no arquivo, sem reativar conexões externas."},
+    {"capability": "identidades-usuarios", "source": "email da exportação SQL", "outcome": "migrate", "status": "verified", "next_action": "Exportação vinculada à conta autenticada existente com o mesmo email; nenhum usuário novo criado"}
   ]
 }
