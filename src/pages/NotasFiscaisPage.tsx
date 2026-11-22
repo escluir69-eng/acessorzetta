@@ -972,7 +972,7 @@ export function NotasFiscaisPage() {
         </div>
 
         <p className="text-[11px] leading-relaxed text-[#52616a]">
-          O Órion valida a chave de 44 dígitos (Mod-11 + UF/DF), interpreta XMLs completos e tenta
+          A Zetta valida a chave de 44 dígitos (Mod-11 + UF/DF), interpreta XMLs completos e tenta
           consultar portais estaduais públicos. Quando houver CAPTCHA, o portal oficial é indicado
           sem simular sucesso — use foto, PDF ou XML para concluir os itens.
         </p>

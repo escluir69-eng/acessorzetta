@@ -275,7 +275,7 @@ export function WeatherModal({
             <Info className="mt-0.5 size-4 shrink-0 text-[#b99555]" />
             <div>
               {weather?.googleNotice ||
-                "A Google Maps Weather API requer chave e faturamento autorizados no Google Cloud. Sem autorização paga ativa, o Órion consulta dados meteorológicos reais públicos via Open-Meteo (CC BY 4.0) em cache de 10 minutos, sem custos e sem dados fictícios."}
+                "A Google Maps Weather API requer chave e faturamento autorizados no Google Cloud. Sem autorização paga ativa, a Zetta consulta dados meteorológicos reais públicos via Open-Meteo (CC BY 4.0) em cache de 10 minutos, sem custos e sem dados fictícios."}
             </div>
           </div>
 

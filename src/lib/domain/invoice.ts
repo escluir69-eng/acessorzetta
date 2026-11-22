@@ -111,7 +111,7 @@ export async function generateInvoicePdf(q: ContractQuote, recipient: PixRecipie
   function header() {
     page.drawRectangle({ x: 0, y: 748, width: 595, height: 94, color: brand });
     page.drawText("Fatura", { x: 36, y: 788, font: bold, size: 28, color: paper });
-    page.drawText("ÓRION · CONTRATOS PARCELADOS", { x: 36, y: 764, font, size: 10, color: paper });
+    page.drawText("ZETTA · CONTRATOS PARCELADOS", { x: 36, y: 764, font, size: 10, color: paper });
     y = 724;
   }
 

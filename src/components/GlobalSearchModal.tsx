@@ -93,7 +93,7 @@ export function GlobalSearchModal({
       className="no-print fixed inset-0 z-[120] flex items-start justify-center bg-[#0c1928]/60 p-4 pt-12 backdrop-blur-xs md:pt-20"
       role="dialog"
       aria-modal="true"
-      aria-label="Busca global no Órion"
+      aria-label="Busca global na Zetta"
       onClick={onClose}
       onKeyDown={handleKeyDown}
     >

@@ -2,6 +2,7 @@ import { Bell, Moon, Settings, Sun, X } from "lucide-react";
 import { toast } from "sonner";
 import { SHOPPING_HIGHLIGHT_PALETTE } from "@/lib/domain/agendaNotes";
 import { useOrion } from "@/store/orionContext";
+import { useZettaPreferences } from "@/components/ZettaPreferences";
 
 export function AgendaSettingsModal({
   open,
@@ -11,6 +12,7 @@ export function AgendaSettingsModal({
   onClose: () => void;
 }) {
   const { state, updateAgendaSettings } = useOrion();
+  const { settings, save } = useZettaPreferences();
   const s = state.agendaSettings;
 
   if (!open) return null;
@@ -63,24 +65,24 @@ export function AgendaSettingsModal({
             <div>
               <div className="font-semibold">Tema de exibição</div>
               <div className="text-[#52616a] dark:text-slate-400">
-                Alterna entre tema claro e escuro preservando a identidade do Órion.
+                Tema da sua conta Zetta.
               </div>
             </div>
             <div className="inline-flex rounded-lg border border-[#dce2e6] p-0.5 dark:border-[#2b4761]">
               <button
                 type="button"
-                onClick={() => void updateAgendaSettings({ themeMode: "light" })}
+                onClick={() => void save({ theme: "light" }).catch(() => toast.error("Não foi possível salvar o tema."))}
                 className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-semibold ${
-                  s.themeMode === "light" ? "bg-[#173d4a] text-white" : "text-[#52616a] dark:text-slate-300"
+                  settings?.theme === "light" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                 }`}
               >
                 <Sun className="size-3.5" /> Claro
               </button>
               <button
                 type="button"
-                onClick={() => void updateAgendaSettings({ themeMode: "dark" })}
+                onClick={() => void save({ theme: "dark" }).catch(() => toast.error("Não foi possível salvar o tema."))}
                 className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-semibold ${
-                  s.themeMode === "dark" ? "bg-[#b99555] text-[#0c1928]" : "text-[#52616a] dark:text-slate-300"
+                  settings?.theme === "dark" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                 }`}
               >
                 <Moon className="size-3.5" /> Escuro

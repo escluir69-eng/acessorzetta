@@ -734,7 +734,7 @@ export function ClockAlarmStopwatchModal({
                       Limites reais de despertador Web / Android PWA
                     </p>
                     <p>
-                      Com o Órion aberto, os alarmes disparam com som e pop-up instantâneo. Com o navegador fechado ou celular em repouso profundo, navegadores Web/PWA dependem de entrega Web Push e restrições de bateria do Android e <strong>não garantem toque no segundo exato</strong> como um app despertador nativo.
+                      Com a Zetta aberta, os alarmes disparam com som e pop-up instantâneo. Com o navegador fechado ou celular em repouso profundo, navegadores Web/PWA dependem de entrega Web Push e restrições de bateria do Android e <strong>não garantem toque no segundo exato</strong> como um app despertador nativo.
                     </p>
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                       <span>

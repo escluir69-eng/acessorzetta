@@ -244,7 +244,7 @@ export function ViagensPage() {
           <ViagensModule
             onOpenCarPlatform={() => setViagensSubTab("road")}
             onBookTicket={(ticket, details) => void handleBookTicket(ticket, details)}
-            hostAppInfo={{ appName: "Órion" }}
+            hostAppInfo={{ appName: "Zetta" }}
           />
         ) : (
           <div className="space-y-6">
