@@ -1,5 +1,12 @@
 # Migração Órion → Lovable (roadmap)
 
+## Repaginação Zetta
+- [ ] Aplicar nome, logos separadas e identidade visual oficial
+- [ ] Renovar login com e-mail, Google, Apple, link mágico e recuperação
+- [ ] Completar perfil privado, avatar, aparência, contas vinculadas e Pix
+- [ ] Reutilizar integração Pluggy segura com teste real
+- [ ] Conferir telas em 360px e 412px e preservar dados importados
+
 Origem: github.com/wwwvaldomiro-oss/orion (React 19 + Express + Firebase/Firestore + Pluggy + Gemini).
 
 ## Etapas
