@@ -5285,6 +5285,33 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const completeGarageRoute: OrionContextValue["completeGarageRoute"] = async (id, rawEndOdometer) => {
+    const ownerId = requireUid();
+    const endOdometer = Number(rawEndOdometer);
+    if (!Number.isFinite(endOdometer) || endOdometer < 0) throw new Error("Informe um hodômetro final válido.");
+    const routeRef = doc(db, "users", ownerId, "garageRoutes", id);
+    try {
+      await runTransaction(db, async (tx) => {
+        const routeSnap = await tx.get(routeRef);
+        if (!routeSnap.exists()) throw new Error("Percurso não encontrado.");
+        const route = routeSnap.data() as GarageRoute;
+        if ((route.status ?? "CONCLUIDA") === "CONCLUIDA") throw new Error("Este percurso já está concluído.");
+        if (endOdometer <= Number(route.startOdometer)) throw new Error("O hodômetro final deve ser maior que o inicial.");
+        const vehicleRef = doc(db, "users", ownerId, "vehicles", route.vehicleId);
+        const vehicleSnap = await tx.get(vehicleRef);
+        if (!vehicleSnap.exists()) throw new Error("Veículo do percurso não encontrado.");
+        const distanceKm = Number((endOdometer - Number(route.startOdometer)).toFixed(1));
+        tx.update(routeRef, { status: "CONCLUIDA", endOdometer, distanceKm, updatedAt: serverTimestamp() });
+        if (endOdometer > Number(vehicleSnap.data()["odometerKm"] ?? 0)) {
+          tx.update(vehicleRef, { odometerKm: endOdometer, updatedAt: serverTimestamp() });
+        }
+      });
+    } catch (err) {
+      if (err instanceof Error && /Percurso|hodômetro|concluído|Veículo/.test(err.message)) throw err;
+      handleFirestoreError(err, OperationType.UPDATE, `users/${ownerId}/garageRoutes/${id}`);
+    }
+  };
+
   const deleteGarageRoute: OrionContextValue["deleteGarageRoute"] = async (id) => {
     const ownerId = requireUid();
     try {
@@ -5906,6 +5933,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         addGarageDocumentsBatch: addGarageDocumentsBatch,
         addGarageChecklist,
         addGarageRoute,
+        completeGarageRoute,
         deleteGarageRoute,
         addGarageReminder,
         toggleGarageReminder,
