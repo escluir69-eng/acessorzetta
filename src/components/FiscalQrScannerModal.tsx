@@ -40,6 +40,21 @@ type Props = {
 async function decodeQrFromImageFile(file: File): Promise<string | null> {
   const objectUrl = URL.createObjectURL(file);
   try {
+    const Detector = (globalThis as unknown as {
+      BarcodeDetector?: new (o: { formats: string[] }) => {
+        detect: (src: ImageBitmapSource) => Promise<Array<{ rawValue: string }>>;
+      };
+    }).BarcodeDetector;
+    if (Detector) {
+      try {
+        const bmp = await createImageBitmap(file);
+        const found = await new Detector({ formats: ["qr_code"] }).detect(bmp);
+        const txt = found[0]?.rawValue?.trim();
+        if (txt) return txt;
+      } catch {
+        // fall back to ZXing
+      }
+    }
     const reader = new BrowserQRCodeReader();
     try {
       const result = await reader.decodeFromImageUrl(objectUrl);
@@ -53,7 +68,7 @@ async function decodeQrFromImageFile(file: File): Promise<string | null> {
         el.onerror = () => reject(new Error("Falha ao carregar imagem"));
         el.src = objectUrl;
       });
-      const maxDim = 1400;
+      for (const maxDim of [1400, 1000, 2000, 700]) {
       const scale = Math.min(1, maxDim / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
@@ -66,8 +81,9 @@ async function decodeQrFromImageFile(file: File): Promise<string | null> {
           const txt = canvasResult.getText()?.trim();
           if (txt) return txt;
         } catch {
-          return null;
+          // try next size
         }
+      }
       }
     }
     return null;
