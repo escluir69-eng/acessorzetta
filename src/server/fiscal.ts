@@ -16,6 +16,44 @@ function isAllowedFiscalGovUrl(rawUrl: string): URL | null {
   }
 }
 
+export function resolveFiscalRedirectUrl(currentUrl: string, location: string): URL | null {
+  try {
+    return isAllowedFiscalGovUrl(new URL(location, currentUrl).toString());
+  } catch {
+    return null;
+  }
+}
+
+async function fetchFiscalPortal(initialUrl: URL): Promise<Response> {
+  let currentUrl = initialUrl;
+  const redirectStatuses = new Set([301, 302, 303, 307, 308]);
+
+  for (let redirects = 0; ; redirects++) {
+    const response = await fetch(currentUrl.toString(), {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; OrionFiscalConsulta/1.0)",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+      redirect: "manual",
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!redirectStatuses.has(response.status)) return response;
+    if (redirects >= 4) {
+      throw new Error("O portal fiscal excedeu o limite de redirecionamentos.");
+    }
+
+    const location = response.headers.get("location");
+    if (!location) return response;
+    const nextUrl = resolveFiscalRedirectUrl(currentUrl.toString(), location);
+    if (!nextUrl) {
+      throw new Error("O portal tentou redirecionar para um endereço fora de HTTPS *.gov.br.");
+    }
+    currentUrl = nextUrl;
+  }
+}
+
 function decodeHtmlEntities(str: string): string {
   return str
     .replace(/&amp;/gi, "&")
@@ -127,15 +165,7 @@ export async function handleFiscalLookup(request: Request): Promise<Response> {
       );
     }
 
-    const upstream = await fetch(safeUrl.toString(), {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; OrionFiscalConsulta/1.0)",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      redirect: "follow",
-      signal: AbortSignal.timeout(15000),
-    });
+    const upstream = await fetchFiscalPortal(safeUrl);
 
     const finalUrl = upstream.url || safeUrl.toString();
     const contentType = upstream.headers.get("content-type") || "";
