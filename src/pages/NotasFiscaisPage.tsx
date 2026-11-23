@@ -597,8 +597,7 @@ export function NotasFiscaisPage() {
           Authorization: `Bearer ${bearer}`,
         },
         body: JSON.stringify({ mimeType: file.type, base64: btoa(binary) }),
-      });
-      const data = await response.json();
+      });      const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Falha OCR");
 
       const r = data.receipt as Partial<FiscalReceipt> & {
@@ -800,6 +799,28 @@ export function NotasFiscaisPage() {
     }
   }
 
+  function handleExportExpensesCsv() {
+    if (filtered.length === 0) {
+      toast.warning("Nenhuma nota fiscal ou recibo nesta seleção para exportar.");
+      return;
+    }
+    const headers = ["Data", "Estabelecimento", "CNPJ", "Categoria", "Tipo de documento", "Número", "Série", "Forma de pagamento", "Valor total (R$)", "Itens", "Status de leitura", "Chave de acesso", "ID da nota"];
+    const csvEscape = (value: unknown) => '"' + String(value ?? "").replace(/"/g, '""') + '"';
+    const rows = filtered.map((n) => [
+      n.issuedAt, n.store, n.cnpj,
+      n.archiveCategory || classifyArchiveCategory(n.store, n.kind, n.items),
+      DOC_TYPE_LABELS[n.docType ?? "nfce_65"], n.number, n.series, n.paymentMethod,
+      (n.totalCents / 100).toFixed(2).replace(".", ","),
+      n.items.map((i) => i.description).join(" | "), statusBadge(n).label, n.accessKey, n.id,
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map(csvEscape).join(";")).join("\r\n");
+    downloadBlob(
+      new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
+      `zetta-despesas-notas-${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+    toast.success(`CSV exportado: ${rows.length} documento(s).`);
+  }
+
   function handleExportFiscalPackage() {
     if (notes.length === 0) {
       toast.warning("Nenhuma nota fiscal cadastrada para exportar em JSON.");
@@ -867,6 +888,14 @@ export function NotasFiscaisPage() {
       subtitle="NFC-e, NF-e, compras de mercado, garantias e conciliação sem duplicidade"
       actions={
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportExpensesCsv}
+            title="Exportar tabela filtrada de despesas para CSV"
+            className="hidden items-center gap-1.5 rounded-lg border border-[#dce2e6] bg-white px-3 py-2 text-xs font-semibold text-[#0c1928] hover:bg-[#f0f3f5] sm:inline-flex"
+          >
+            <Download className="size-3.5" /> Exportar despesas CSV
+          </button>
           <button
             type="button"
             onClick={handleExportFiscalPackage}
@@ -942,6 +971,14 @@ export function NotasFiscaisPage() {
             />
           </label>
 
+          <button
+            type="button"
+            onClick={handleExportExpensesCsv}
+            title="Exportar despesas filtradas para CSV"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#dce2e6] bg-white px-3 py-2.5 text-xs font-semibold text-[#0c1928] hover:bg-[#f0f3f5] sm:hidden"
+          >
+            <Download className="size-4" /> CSV despesas
+          </button>
           <button
             type="button"
             onClick={handleExportFiscalPackage}
@@ -1197,8 +1234,7 @@ export function NotasFiscaisPage() {
                       </div>
                     </div>
                     <span className="tabular-nums shrink-0 rounded bg-[#f0fdf4] px-2 py-0.5 font-bold text-[#15803d]">
-                      {p.changePercent}%
-                    </span>
+                      {p.changePercent}%                    </span>
                   </div>
                 ))}
                 {marketReport.priceDrops.length === 0 && (
@@ -1797,8 +1833,7 @@ export function NotasFiscaisPage() {
                   <input
                     value={edit.number}
                     onChange={(e) => setEdit((p) => (p ? { ...p, number: e.target.value } : p))}
-                    className="mt-1 w-full rounded-lg border border-[#cbd3d8] px-3 py-2 text-sm"
-                  />
+                    className="mt-1 w-full rounded-lg border border-[#cbd3d8] px-3 py-2 text-sm"                  />
                 </label>
                 <label className="text-xs font-semibold text-[#0c1928]">
                   Série
