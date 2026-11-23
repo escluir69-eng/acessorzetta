@@ -3,6 +3,7 @@ import { Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { useGarage } from "../context/garageContext";
 import { vehicleSchema } from "../schemas/garage.schemas";
+import { parseCrlvText, type CrlvTextExtract } from "../utils/crlv-text-parser";
 import type {
   FipeConsultationResponse,
   FuelType,
@@ -42,6 +43,8 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [consultingFipe, setConsultingFipe] = useState(false);
+  const [crlvText, setCrlvText] = useState("");
+  const [crlvExtract, setCrlvExtract] = useState<CrlvTextExtract | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -66,6 +69,8 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
       setNotes(editingVehicle.notes ?? "");
     } else {
       setPlate("");
+      setCrlvText("");
+      setCrlvExtract(null);
       setBrand("");
       setModel("");
       setYear(String(new Date().getFullYear()));
@@ -81,6 +86,8 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
       setMonthlyFixedCost("");
       setNotes("");
     }
+    setCrlvText("");
+    setCrlvExtract(null);
     setErrorMsg(null);
   }, [open, editingVehicle]);
 
@@ -214,6 +221,35 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
               {errorMsg}
             </div>
           )}
+
+          {/* Assistive CRLV-e text extraction: pasted text is parsed locally, fields are reviewed before saving. */}
+          <section className="rounded-xl border border-[#dce2e6] bg-[#f7f8fa] p-3.5 space-y-2">
+            <div className="text-xs font-semibold text-[#173d4a]">Preenchimento assistido pelo CRLV-e</div>
+            <p className="text-[11px] text-[#52616a]">Copie o texto do documento (PDF pesquisável) e cole aqui. A extração ocorre no navegador; revise os dados antes de salvar. Não é OCR de imagem.</p>
+            <textarea
+              value={crlvText}
+              onChange={(e) => { setCrlvText(e.target.value); setCrlvExtract(null); }}
+              rows={3}
+              placeholder="Cole o texto copiado do CRLV-e…"
+              className="w-full rounded-lg border border-[#cbd3d8] bg-white p-2.5 text-xs"
+            />
+            <button type="button" onClick={() => setCrlvExtract(parseCrlvText(crlvText))} disabled={!crlvText.trim()} className="rounded-lg border border-[#cbd3d8] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-50">Identificar campos</button>
+            {crlvExtract && (
+              <div className="rounded-lg border border-[#dce2e6] bg-white p-3 space-y-1.5 text-xs">
+                <div className="font-semibold">Campos encontrados — confira antes de aplicar</div>
+                <div>Placa: {crlvExtract.plate ?? "não identificada"}</div>
+                <div>RENAVAM: {crlvExtract.renavam ?? "não identificado"}</div>
+                <div>Chassi: {crlvExtract.chassis ?? "não identificado"}</div>
+                <div>Ano fabricação/modelo: {crlvExtract.manufactureYear ?? "—"} / {crlvExtract.modelYear ?? "—"}</div>
+                <button type="button" onClick={() => {
+                  if (crlvExtract.plate) setPlate(crlvExtract.plate);
+                  if (crlvExtract.renavam) setRenavam(crlvExtract.renavam);
+                  if (crlvExtract.modelYear) setYear(String(crlvExtract.modelYear));
+                  toast.success("Campos identificados aplicados. Revise o formulário.");
+                }} className="mt-1 rounded-lg bg-[#173d4a] px-3 py-1.5 text-xs font-semibold text-white">Aplicar campos identificados</button>
+              </div>
+            )}
+          </section>
 
           {/* Optional FIPE auto-fill helper */}
           <div className="rounded-xl border border-[#dce2e6] bg-[#f7f8fa] p-3.5">
