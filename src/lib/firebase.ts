@@ -25,6 +25,12 @@ export interface User {
   emailVerified: boolean;
 }
 
+export function isEmailVerified(
+  u: Pick<SupabaseUser, "email_confirmed_at" | "confirmed_at">,
+): boolean {
+  return Boolean(u.email_confirmed_at) || Boolean(u.confirmed_at);
+}
+
 function mapUser(u: SupabaseUser | null): User | null {
   if (!u) return null;
   const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
@@ -36,7 +42,7 @@ function mapUser(u: SupabaseUser | null): User | null {
       (typeof meta["name"] === "string" && meta["name"]) ||
       null,
     photoURL: typeof meta["avatar_url"] === "string" ? meta["avatar_url"] : null,
-    emailVerified: Boolean(u.email_confirmed_at) || Boolean(u.confirmed_at) || true,
+    emailVerified: isEmailVerified(u),
   };
 }
 
@@ -354,7 +360,10 @@ export async function setDoc(
 }
 
 export async function updateDoc(ref: DocRef, update: DocumentData): Promise<void> {
-  const existing = (await fetchDoc(ref.path)) ?? {};
+  const existing = await fetchDoc(ref.path);
+  if (existing === undefined) {
+    throw new Error(`Documento não encontrado: ${ref.path}`);
+  }
   await upsertDoc(ref.path, applyUpdate(existing, update));
 }
 
