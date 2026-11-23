@@ -34,4 +34,15 @@ describe("buildTripAnalyticsReport", () => {
     expect(report.expenses).toHaveLength(1);
     expect(report.totalCost).toBe(204);
   });
+  it("prioriza abastecimentos e despesas vinculados mesmo fora da janela de datas", () => {
+    const linkedFuel = { ...fuel, id: "f-linked", tripId: "t1", date: "2026-11-08", totalCost: 210 };
+    const linkedExpense = { ...other, id: "e-linked", tripId: "t1", date: "2026-11-08", amount: 30 };
+    const report = buildTripAnalyticsReport(trip, [route], [fuel, linkedFuel], [toll, other, linkedExpense], vehicle);
+    expect(report.fuelings.map((item) => item.id)).toContain("f-linked");
+    expect(report.expenses.map((item) => item.id)).toContain("e-linked");
+    expect(report.fuelCost).toBe(390);
+    expect(report.otherExpenseCost).toBe(45);
+    expect(report.totalCost).toBe(459);
+  });
+
 });
