@@ -37,10 +37,14 @@ export function buildTripAnalyticsReport(
   const tripVehicleId = tripRoutes[0]?.vehicleId;
   const inWindow = (date: string) => date >= trip.startDate && date <= trip.endDate;
   const tripFuelings = fuelings.filter(
-    (fuel) => (!tripVehicleId || fuel.vehicleId === tripVehicleId) && inWindow(fuel.date),
+    (fuel) =>
+      fuel.tripId === trip.id ||
+      (!fuel.tripId && (!tripVehicleId || fuel.vehicleId === tripVehicleId) && inWindow(fuel.date)),
   );
   const tripExpenses = expenses.filter(
-    (expense) => (!tripVehicleId || expense.vehicleId === tripVehicleId) && inWindow(expense.date),
+    (expense) =>
+      expense.tripId === trip.id ||
+      (!expense.tripId && (!tripVehicleId || expense.vehicleId === tripVehicleId) && inWindow(expense.date)),
   );
 
   const fuelCost = tripFuelings.reduce((sum, fuel) => sum + Math.max(0, fuel.totalCost), 0);
@@ -80,6 +84,6 @@ export function buildTripAnalyticsReport(
     averageConsumption,
     estimatedRange,
     attributionNote:
-      "Percursos consideram somente registros concluídos vinculados à viagem. Abastecimentos e despesas são estimativas por veículo e datas; sem vínculo individual, podem incluir lançamentos de outras atividades.",
+      "Percursos consideram somente registros concluídos vinculados à viagem. Lançamentos com vínculo direto são precisos; os sem vínculo seguem estimados por veículo e período e podem incluir outras atividades.",
   };
 }
