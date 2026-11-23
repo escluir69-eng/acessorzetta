@@ -523,14 +523,12 @@ export const QuickEntryModal: React.FC = () => {
                     Ler NFC-e
                   </button>
                 </div>
-                {isNfceScanning && (
-                  <div className="mt-3 space-y-2">
-                    <video ref={nfceVideoRef} className="max-h-56 w-full rounded-lg bg-black object-contain" muted playsInline />
-                    <button type="button" onClick={stopNfceCamera} className="h-8 rounded-lg border border-[#cbd3d8] px-3 text-xs font-semibold text-[#52616a]">
-                      Fechar câmera
-                    </button>
-                  </div>
-                )}
+                <div className={isNfceScanning ? "mt-3 space-y-2" : "hidden"}>
+                  <video ref={nfceVideoRef} className="max-h-56 w-full rounded-lg bg-black object-contain" muted playsInline />
+                  <button type="button" onClick={stopNfceCamera} className="h-8 rounded-lg border border-[#cbd3d8] px-3 text-xs font-semibold text-[#52616a]">
+                    Fechar câmera
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
