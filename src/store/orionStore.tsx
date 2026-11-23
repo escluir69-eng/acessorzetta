@@ -5262,6 +5262,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         endOdometer,
         distanceKm,
         status,
+        tripId: route.tripId ? clampStr(route.tripId, 128) : undefined,
         estimatedKm:
           typeof route.estimatedKm === "number" && route.estimatedKm > 0
             ? Number(route.estimatedKm)
