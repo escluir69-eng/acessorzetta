@@ -597,8 +597,7 @@ export function NotasFiscaisPage() {
           Authorization: `Bearer ${bearer}`,
         },
         body: JSON.stringify({ mimeType: file.type, base64: btoa(binary) }),
-      });      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Falha OCR");
+      });      const data = await response.json();      if (!response.ok) throw new Error(data.error || "Falha OCR");
 
       const r = data.receipt as Partial<FiscalReceipt> & {
         items?: Partial<ReceiptItem>[];
@@ -815,7 +814,7 @@ export function NotasFiscaisPage() {
     ]);
     const csv = [headers, ...rows].map((row) => row.map(csvEscape).join(";")).join("\r\n");
     downloadBlob(
-      new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
+      new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
       `zetta-despesas-notas-${new Date().toISOString().slice(0, 10)}.csv`,
     );
     toast.success(`CSV exportado: ${rows.length} documento(s).`);
@@ -1197,8 +1196,7 @@ export function NotasFiscaisPage() {
           {/* Price Increases vs Drops + Purchase Frequency */}
           <div className="grid gap-5 lg:grid-cols-3">
             <section className="rounded-xl border border-[#dce2e6] bg-white p-5">
-              <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#b91c1c]">
-                <TrendingUp className="size-4" /> Ficaram mais caros
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#b91c1c]">                <TrendingUp className="size-4" /> Ficaram mais caros
               </h2>
               <div className="divide-y divide-[#edf1f3] text-xs">
                 {marketReport.priceIncreases.slice(0, 8).map((p) => (
@@ -1797,8 +1795,7 @@ export function NotasFiscaisPage() {
                     <option value="aquisicoes">Aquisições / garantia</option>
                   </select>
                 </label>
-                <label className="text-xs font-semibold text-[#0c1928]">
-                  Modelo fiscal
+                <label className="text-xs font-semibold text-[#0c1928]">                  Modelo fiscal
                   <select
                     value={edit.docType ?? "nfce_65"}
                     onChange={(e) =>
