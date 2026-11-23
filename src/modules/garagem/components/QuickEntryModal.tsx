@@ -106,6 +106,7 @@ export const QuickEntryModal: React.FC = () => {
   const [destination, setDestination] = useState("");
   const [startOdometer, setStartOdometer] = useState("");
   const [endOdometer, setEndOdometer] = useState("");
+  const [routeStatus, setRouteStatus] = useState<"PLANEJADA" | "EM_ANDAMENTO" | "CONCLUIDA">("CONCLUIDA");
   const [estimatedKm, setEstimatedKm] = useState("");
   const [purpose, setPurpose] = useState("");
 
@@ -121,6 +122,7 @@ export const QuickEntryModal: React.FC = () => {
     setMaintOdometer(defaultVeh ? String(defaultVeh.currentOdometer) : "");
     setStartOdometer(defaultVeh ? String(defaultVeh.currentOdometer) : "");
     setEndOdometer("");
+    setRouteStatus("CONCLUIDA");
     setQuantity("");
     setUnitPrice("");
     setTotalCost("");
@@ -301,7 +303,8 @@ export const QuickEntryModal: React.FC = () => {
           origin,
           destination,
           startOdometer,
-          endOdometer,
+          endOdometer: endOdometer === "" ? undefined : endOdometer,
+          status: routeStatus,
           estimatedKm: estimatedKm ? Number(estimatedKm) : undefined,
           purpose: purpose || undefined,
         });
@@ -845,45 +848,31 @@ export const QuickEntryModal: React.FC = () => {
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">
-                    Km Inicial *
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={startOdometer}
-                    onChange={(e) => setStartOdometer(e.target.value)}
-                    className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs"
-                    required
-                  />
+                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">Situação do percurso *</label>
+                  <select value={routeStatus} onChange={(e) => setRouteStatus(e.target.value as typeof routeStatus)} className="h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs">
+                    <option value="PLANEJADA">Planejada</option>
+                    <option value="EM_ANDAMENTO">Em andamento</option>
+                    <option value="CONCLUIDA">Concluída</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">
-                    Km Final *
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={endOdometer}
-                    onChange={(e) => setEndOdometer(e.target.value)}
-                    className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs"
-                    required
-                  />
+                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">Km Inicial *</label>
+                  <input type="number" min={0} value={startOdometer} onChange={(e) => setStartOdometer(e.target.value)} className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs" required />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">
-                    Km Estimado (GPS)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={estimatedKm}
-                    onChange={(e) => setEstimatedKm(e.target.value)}
-                    placeholder="Opcional"
-                    className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs"
-                  />
+                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">Km Estimado (GPS)</label>
+                  <input type="number" min={0} value={estimatedKm} onChange={(e) => setEstimatedKm(e.target.value)} placeholder="Opcional" className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs" />
                 </div>
               </div>
+              {routeStatus === "CONCLUIDA" ? (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">Km Final *</label>
+                  <input type="number" min={0} value={endOdometer} onChange={(e) => setEndOdometer(e.target.value)} className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs" required />
+                  <p className="mt-1 text-[10px] text-[#52616a]">Informe a quilometragem final para concluir e atualizar o hodômetro do veículo.</p>
+                </div>
+              ) : (
+                <p className="rounded-lg bg-[#f7f8fa] px-3 py-2 text-[11px] text-[#52616a]">O hodômetro final poderá ser informado quando o percurso for concluído.</p>
+              )}
 
               <div>
                 <label className="mb-1 block text-xs font-semibold text-[#52616a]">
