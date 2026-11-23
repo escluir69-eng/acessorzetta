@@ -703,6 +703,7 @@ export type GarageRoute = {
   purpose?: string;
   status?: GarageRouteStatus;
   tripId?: string;
+  completionChecklist?: string[];
 };
 
 export type GarageReminder = {
