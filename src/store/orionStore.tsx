@@ -5300,8 +5300,12 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const completeGarageRoute: OrionContextValue["completeGarageRoute"] = async (id, rawEndOdometer) => {
+  const completeGarageRoute: OrionContextValue["completeGarageRoute"] = async (id, rawEndOdometer, checklist) => {
     const ownerId = requireUid();
+    const requiredChecks = ["Abastecimento e autonomia conferidos", "Pneus, estepe e calibragem conferidos", "Documentos e habilitação conferidos", "Pedágios, despesas e comprovantes revisados"];
+    if (!Array.isArray(checklist) || requiredChecks.some((item) => !checklist.includes(item))) {
+      throw new Error("Conclua todos os itens da revisão antes de encerrar o percurso.");
+    }
     const endOdometer = Number(rawEndOdometer);
     if (!Number.isFinite(endOdometer) || endOdometer < 0) throw new Error("Informe um hodômetro final válido.");
     const routeRef = doc(db, "users", ownerId, "garageRoutes", id);
