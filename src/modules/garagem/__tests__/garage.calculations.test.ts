@@ -281,5 +281,39 @@ describe("garagem.calculations", () => {
         endOdometer: 24900,
       }).success,
     ).toBe(false);
+
+    expect(
+      routeTripSchema.safeParse({
+        vehicleId: "veh-1",
+        date: "2026-11-20",
+        origin: "Brasília",
+        destination: "Pirenópolis",
+        startOdometer: 25000,
+        status: "PLANEJADA",
+        estimatedKm: 150,
+      }).success,
+    ).toBe(true);
+
+    expect(
+      routeTripSchema.safeParse({
+        vehicleId: "veh-1",
+        date: "2026-11-20",
+        origin: "Brasília",
+        destination: "Pirenópolis",
+        startOdometer: 25000,
+        status: "EM_ANDAMENTO",
+      }).success,
+    ).toBe(true);
+
+    expect(
+      routeTripSchema.safeParse({
+        vehicleId: "veh-1",
+        date: "2026-11-20",
+        origin: "Brasília",
+        destination: "Pirenópolis",
+        startOdometer: 25000,
+        status: "CONCLUIDA",
+      }).success,
+    ).toBe(false);
   });
 });
