@@ -8,6 +8,6 @@ describe("isEmailVerified", () => {
   });
 
   it("returns false when the email has not been confirmed", () => {
-    expect(isEmailVerified({ confirmed_at: null })).toBe(false);
+    expect(isEmailVerified({})).toBe(false);
   });
 });
