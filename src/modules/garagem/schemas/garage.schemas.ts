@@ -105,6 +105,7 @@ export const routeTripSchema = z
     startOdometer: z.coerce.number().min(0, "Hodômetro inicial inválido"),
     endOdometer: z.coerce.number().min(0, "Hodômetro final inválido").optional(),
     status: z.enum(["PLANEJADA", "EM_ANDAMENTO", "CONCLUIDA"]).optional(),
+    tripId: z.string().max(128).optional(),
     estimatedKm: z.coerce.number().min(0).optional(),
     purpose: z.string().trim().optional(),
   })
