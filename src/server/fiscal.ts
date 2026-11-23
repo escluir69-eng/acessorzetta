@@ -7,6 +7,7 @@ import { generateResponse } from "@lovable.dev/ai-gateway";
 function isAllowedFiscalGovUrl(rawUrl: string): URL | null {
   try {
     const parsed = new URL(rawUrl);
+    if (parsed.protocol === "http:") parsed.protocol = "https:";
     if (parsed.protocol !== "https:") return null;
     const host = parsed.hostname.toLowerCase();
     if (!host.endsWith(".gov.br")) return null;
@@ -297,27 +298,23 @@ export async function handleFiscalOcr(request: Request): Promise<Response> {
       return Response.json({ error: "Anexe foto ou PDF até 8 MB" }, { status: 400 });
     }
 
-    if (mimeType === "application/pdf") {
-      return Response.json(
-        {
-          error:
-            "OCR de PDF ainda não está disponível nesta versão. Fotografe a nota ou envie uma imagem (JPG/PNG/WebP).",
-        },
-        { status: 422 },
-      );
-    }
-
     const response = await generateResponse({
       model: "openai/gpt-6-astra",
       input: [
         {
           role: "user",
           content: [
-            {
-              type: "input_image",
-              image_url: `data:${mimeType};base64,${base64}`,
-              detail: "high",
-            },
+            mimeType === "application/pdf"
+              ? {
+                  type: "input_file" as const,
+                  filename: "nota-fiscal.pdf",
+                  file_data: `data:application/pdf;base64,${base64}`,
+                }
+              : {
+                  type: "input_image" as const,
+                  image_url: `data:${mimeType};base64,${base64}`,
+                  detail: "high" as const,
+                },
             {
               type: "input_text",
               text: "Extraia os dados reais desta nota fiscal brasileira (NFC-e, NF-e, DANFE, NFS-e ou cupom). Retorne SOMENTE campos legíveis no documento, com totalCents, discountCents e unitPriceCents em inteiros de centavos, issuedAt em YYYY-MM-DD, issuedTime em HH:MM e accessKey com 44 dígitos. Não invente dados ausentes ou ilegíveis; liste quaisquer campos incertos em lowConfidenceFields.",
