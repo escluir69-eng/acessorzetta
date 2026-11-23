@@ -720,9 +720,9 @@ export function parseNfceQrPayload(rawInput: string): ParsedNfceData | null {
     const brDate = dateRaw?.match(/\b(\d{2})\/(\d{2})\/(\d{4})\b/);
     const stationName = normalized.get("xnome") ?? normalized.get("posto");
 
-    if (keyMatch || (Number.isFinite(parsedValue) && parsedValue > 0)) {
+    if (keyMatch) {
       return {
-        nfceKey: keyMatch?.[1] ?? "",
+        nfceKey: keyMatch[1],
         totalCost: Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : undefined,
         date: isoDate ?? (brDate ? `${brDate[3]}-${brDate[2]}-${brDate[1]}` : undefined),
         stationName: stationName?.trim() || undefined,
