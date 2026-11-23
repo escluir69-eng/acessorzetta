@@ -763,6 +763,7 @@ export function computeRouteAudit(route: RouteTrip): {
   deltaPercent: number;
   flagged: boolean;
 } | null {
+  if ((route.status && route.status !== "CONCLUIDA") || route.endOdometer === undefined) return null;
   if (!route.estimatedKm || route.estimatedKm <= 0) return null;
   const deltaKm = Number((route.distanceKm - route.estimatedKm).toFixed(1));
   const deltaPercent = Number(((deltaKm / route.estimatedKm) * 100).toFixed(1));
