@@ -52,6 +52,12 @@ export const RoutesRemindersPage: React.FC<RoutesRemindersPageProps> = ({ onNewR
     [snapshot.vehicles],
   );
 
+  const tripReports = useMemo(() => state.trips.map((trip) => {
+    const tripRoutes = snapshot.routes.filter((route) => route.tripId === trip.id);
+    const vehicle = tripRoutes[0] ? vehicleMap.get(tripRoutes[0].vehicleId) : undefined;
+    return buildTripAnalyticsReport(trip, snapshot.routes, snapshot.fuelings, snapshot.expenses, vehicle);
+  }).filter((report) => selectedVehicleFilter === "TODOS" || report.routes.some((route) => route.vehicleId === selectedVehicleFilter)), [state.trips, snapshot.routes, snapshot.fuelings, snapshot.expenses, vehicleMap, selectedVehicleFilter]);
+
   const filteredReminders = useMemo(() => {
     return snapshot.reminders.filter(
       (r) => selectedVehicleFilter === "TODOS" || r.vehicleId === selectedVehicleFilter,
