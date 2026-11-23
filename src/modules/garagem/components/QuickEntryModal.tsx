@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { todayBR } from "@/lib/domain/money";
+import { useOrion } from "@/store/orionContext";
 import { useGarage } from "../context/garageContext";
 import {
   fineSchema,
@@ -47,6 +48,7 @@ const PERSONAL_EXPENSE_CATEGORIES = [
 ];
 
 export const QuickEntryModal: React.FC = () => {
+  const { state: orionState } = useOrion();
   const {
     snapshot,
     selectedVehicleFilter,
@@ -107,6 +109,7 @@ export const QuickEntryModal: React.FC = () => {
   const [startOdometer, setStartOdometer] = useState("");
   const [endOdometer, setEndOdometer] = useState("");
   const [routeStatus, setRouteStatus] = useState<"PLANEJADA" | "EM_ANDAMENTO" | "CONCLUIDA">("CONCLUIDA");
+  const [routeTripId, setRouteTripId] = useState("");
   const [estimatedKm, setEstimatedKm] = useState("");
   const [purpose, setPurpose] = useState("");
 
@@ -123,6 +126,7 @@ export const QuickEntryModal: React.FC = () => {
     setStartOdometer(defaultVeh ? String(defaultVeh.currentOdometer) : "");
     setEndOdometer("");
     setRouteStatus("CONCLUIDA");
+    setRouteTripId("");
     setQuantity("");
     setUnitPrice("");
     setTotalCost("");
@@ -305,6 +309,7 @@ export const QuickEntryModal: React.FC = () => {
           startOdometer,
           endOdometer: endOdometer === "" ? undefined : endOdometer,
           status: routeStatus,
+          tripId: routeTripId || undefined,
           estimatedKm: estimatedKm ? Number(estimatedKm) : undefined,
           purpose: purpose || undefined,
         });
@@ -873,6 +878,27 @@ export const QuickEntryModal: React.FC = () => {
               ) : (
                 <p className="rounded-lg bg-[#f7f8fa] px-3 py-2 text-[11px] text-[#52616a]">O hodômetro final poderá ser informado quando o percurso for concluído.</p>
               )}
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#52616a]">
+                  Vincular à viagem planejada
+                </label>
+                <select
+                  value={routeTripId}
+                  onChange={(e) => setRouteTripId(e.target.value)}
+                  className="h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs"
+                >
+                  <option value="">Não vincular</option>
+                  {orionState.trips.filter((trip) => trip.status !== "Concluída").map((trip) => (
+                    <option key={trip.id} value={trip.id}>
+                      {trip.destination} · {trip.startDate}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[10px] text-[#52616a]">
+                  Associa este percurso a uma viagem do Planejamento de Viagens.
+                </p>
+              </div>
 
               <div>
                 <label className="mb-1 block text-xs font-semibold text-[#52616a]">
