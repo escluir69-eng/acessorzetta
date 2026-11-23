@@ -1418,10 +1418,19 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           origin: String(d["origin"] ?? ""),
           destination: String(d["destination"] ?? ""),
           startOdometer: Number(d["startOdometer"] ?? 0),
-          endOdometer: Number(d["endOdometer"] ?? 0),
+          ...(typeof d["endOdometer"] === "number" && Number.isFinite(d["endOdometer"])
+            ? { endOdometer: d["endOdometer"] }
+            : {}),
           distanceKm: Number(d["distanceKm"] ?? 0),
           ...(typeof d["estimatedKm"] === "number" ? { estimatedKm: d["estimatedKm"] } : {}),
           ...(typeof d["purpose"] === "string" ? { purpose: d["purpose"] } : {}),
+          ...(d["status"] === "PLANEJADA" || d["status"] === "EM_ANDAMENTO" || d["status"] === "CONCLUIDA"
+            ? { status: d["status"] as GarageRoute["status"] }
+            : {}),
+          ...(typeof d["tripId"] === "string" ? { tripId: d["tripId"] } : {}),
+          ...(Array.isArray(d["completionChecklist"])
+            ? { completionChecklist: d["completionChecklist"].filter((item): item is string => typeof item === "string").slice(0, 4) }
+            : {}),
         }),
         (garageRoutes) =>
           setState((prev) => ({
