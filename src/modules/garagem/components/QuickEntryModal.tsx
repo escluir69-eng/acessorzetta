@@ -37,6 +37,13 @@ const ENTRY_TABS: Array<{ id: QuickEntryKind; label: string; icon: React.Compone
   { id: "percurso", label: "Percurso (km)", icon: MapPin },
 ];
 
+const ROUTE_PRE_CLOSE_ITEMS = [
+  "Abastecimento e autonomia conferidos",
+  "Pneus, estepe e calibragem conferidos",
+  "Documentos e habilitação conferidos",
+  "Pedágios, despesas e comprovantes revisados",
+];
+
 const PERSONAL_EXPENSE_CATEGORIES = [
   "Pedágio / Tag Sem Parar",
   "Estacionamento",
@@ -110,6 +117,7 @@ export const QuickEntryModal: React.FC = () => {
   const [endOdometer, setEndOdometer] = useState("");
   const [routeStatus, setRouteStatus] = useState<"PLANEJADA" | "EM_ANDAMENTO" | "CONCLUIDA">("CONCLUIDA");
   const [routeTripId, setRouteTripId] = useState("");
+  const [routeChecklist, setRouteChecklist] = useState<string[]>([]);
   const [estimatedKm, setEstimatedKm] = useState("");
   const [purpose, setPurpose] = useState("");
 
@@ -127,6 +135,7 @@ export const QuickEntryModal: React.FC = () => {
     setEndOdometer("");
     setRouteStatus("CONCLUIDA");
     setRouteTripId("");
+    setRouteChecklist([]);
     setQuantity("");
     setUnitPrice("");
     setTotalCost("");
@@ -300,6 +309,10 @@ export const QuickEntryModal: React.FC = () => {
         await addFine(parsed.data);
         toast.success("Multa registrada.");
       } else if (quickEntryKind === "percurso") {
+        if (routeStatus === "CONCLUIDA" && routeChecklist.length !== ROUTE_PRE_CLOSE_ITEMS.length) {
+          setErrorMsg("Confira todos os itens da revisão antes de concluir o percurso.");
+          return;
+        }
         const parsed = routeTripSchema.safeParse({
           vehicleId,
           driverId: driverId || undefined,
@@ -869,6 +882,31 @@ export const QuickEntryModal: React.FC = () => {
                   <input type="number" min={0} value={estimatedKm} onChange={(e) => setEstimatedKm(e.target.value)} placeholder="Opcional" className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs" />
                 </div>
               </div>
+              {routeStatus === "CONCLUIDA" && (
+                <div className="rounded-xl border border-[#dce2e6] bg-[#f7f8fa] p-3">
+                  <p className="mb-2 text-xs font-semibold text-[#173d4a]">
+                    Revisão antes de encerrar o percurso
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {ROUTE_PRE_CLOSE_ITEMS.map((item) => (
+                      <label key={item} className="flex items-start gap-2 text-[11px] text-[#52616a]">
+                        <input
+                          type="checkbox"
+                          checked={routeChecklist.includes(item)}
+                          onChange={(e) => setRouteChecklist((current) =>
+                            e.target.checked ? [...current, item] : current.filter((value) => value !== item)
+                          )}
+                          className="mt-0.5 size-3.5 accent-[#173d4a]"
+                        />
+                        {item}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[10px] text-[#52616a]">
+                    Marque os quatro itens para liberar o encerramento.
+                  </p>
+                </div>
+              )}
               {routeStatus === "CONCLUIDA" ? (
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-[#52616a]">Km Final *</label>
