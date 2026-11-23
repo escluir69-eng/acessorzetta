@@ -162,7 +162,7 @@ export function inferUfFromUrl(url: string): string {
 }
 
 export function parseFiscalInput(rawInput: string): ParsedFiscalQrInput {
-  const raw = rawInput.trim().replace(/^(https?:\/\/)?(www\.)?/i, (m) => m) ;
+  const raw = rawInput.trim();
   const lowerRaw = raw.toLowerCase();
   const bareGov = !/^https?:\/\//i.test(raw) && /^[a-z0-9.-]+\.gov\.br\//i.test(raw);
   const sourceUrl = bareGov ? `https://${raw}` : lowerRaw.startsWith("https://")
