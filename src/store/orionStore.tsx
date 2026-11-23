@@ -5329,7 +5329,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         const vehicleSnap = await tx.get(vehicleRef);
         if (!vehicleSnap.exists()) throw new Error("Veículo do percurso não encontrado.");
         const distanceKm = Number((endOdometer - Number(route.startOdometer)).toFixed(1));
-        tx.update(routeRef, { status: "CONCLUIDA", endOdometer, distanceKm, updatedAt: serverTimestamp() });
+        tx.update(routeRef, { status: "CONCLUIDA", completionChecklist: requiredChecks, endOdometer, distanceKm, updatedAt: serverTimestamp() });
         if (endOdometer > Number(vehicleSnap.data()["odometerKm"] ?? 0)) {
           tx.update(vehicleRef, { odometerKm: endOdometer, updatedAt: serverTimestamp() });
         }
