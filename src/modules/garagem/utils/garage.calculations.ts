@@ -296,10 +296,12 @@ export function computeGarageKpis(
 
   fuelings.forEach((f) => pushOdometer(f.vehicleId, f.odometer));
   maintenances.forEach((m) => pushOdometer(m.vehicleId, m.odometer));
-  routes.forEach((r) => {
-    pushOdometer(r.vehicleId, r.startOdometer);
-    pushOdometer(r.vehicleId, r.endOdometer);
-  });
+  routes
+    .filter((r) => (r.status ?? "CONCLUIDA") === "CONCLUIDA" && r.endOdometer !== undefined)
+    .forEach((r) => {
+      pushOdometer(r.vehicleId, r.startOdometer);
+      pushOdometer(r.vehicleId, r.endOdometer!);
+    });
 
   let totalDistanceKm = 0;
   for (const [, odos] of odometersByVehicle.entries()) {
@@ -376,9 +378,11 @@ export function computeVehicleTcoSummary(
       const odos: number[] = [];
       vFuel.forEach((f) => odos.push(f.odometer));
       vMaint.forEach((m) => odos.push(m.odometer));
-      vRoutes.forEach((r) => {
-        odos.push(r.startOdometer, r.endOdometer);
-      });
+      vRoutes
+        .filter((r) => (r.status ?? "CONCLUIDA") === "CONCLUIDA" && r.endOdometer !== undefined)
+        .forEach((r) => {
+          odos.push(r.startOdometer, r.endOdometer!);
+        });
 
       let distanceKm = odos.length >= 2 ? Math.max(...odos) - Math.min(...odos) : 0;
       if (distanceKm === 0 && vRoutes.length > 0) {
@@ -585,7 +589,7 @@ export function buildUnifiedTimeline(
         kind: "PERCURSO",
         title: `${r.origin} → ${r.destination}`,
         subtitle: `${formatNumberBR(r.distanceKm, 0)} km percorridos`,
-        odometer: r.endOdometer,
+        odometer: r.endOdometer ?? r.startOdometer,
       });
     });
 
