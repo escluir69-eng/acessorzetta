@@ -276,7 +276,7 @@ export const QuickEntryModal: React.FC = () => {
           totalCost: t,
           fullTank,
           stationName: stationName || undefined,
-          nfceKey: nfceRaw || undefined,
+          nfceKey: nfceRaw ? (parseNfceQrPayload(nfceRaw)?.nfceKey ?? nfceRaw) : undefined,
           notes: fuelNotes || undefined,
         });
         if (!parsed.success) {
