@@ -23,7 +23,7 @@ export function parseCrlvText(text: string): CrlvTextExtract {
   const chassisMatch = normalized.match(/(?:CHASSI|VIN)\s*[:\-]?\s*([A-HJ-NPR-Z0-9]{17})/);
   if (chassisMatch?.[1]) result.chassis = chassisMatch[1];
 
-  const yearMatch = normalized.match(/ANO\s*(?:FAB(?:RICACAO)?\s*\/\s*)?MODELO\s*[:\-]?\s*(\d{4})\s*\/\s*(\d{4})/);
+  const yearMatch = normalized.match(/ANO\s*(?:FAB(?:RICACAO)?\s*)?(?:\/\s*ANO\s*(?:MOD(?:ELO)?\s*)?)?[:\-]?\s*(\d{4})\s*\/\s*(\d{4})/);
   if (yearMatch?.[1] && yearMatch?.[2]) {
     const manufactureYear = Number(yearMatch[1]);
     const modelYear = Number(yearMatch[2]);
