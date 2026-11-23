@@ -214,11 +214,11 @@ export const RoutesRemindersPage: React.FC<RoutesRemindersPageProps> = ({ onNewR
                         {route.origin} → {route.destination}
                       </div>
                       <div className="mt-0.5 text-[#52616a]">
-                        {formatDateBR(route.date)} · {veh?.plate ?? ""} ·{" "}
+                        {formatDateBR(route.date)} · {veh?.plate ?? ""} · {({ PLANEJADA: "Planejada", EM_ANDAMENTO: "Em andamento", CONCLUIDA: "Concluída" }[route.status ?? "CONCLUIDA"])} ·{" "}
                         <span className="tabular-nums font-semibold text-[#0c1928]">
                           {formatNumberBR(route.distanceKm, 0)} km
                         </span>{" "}
-                        ({formatKm(route.startOdometer)} → {formatKm(route.endOdometer)})
+                        ({formatKm(route.startOdometer)} → {route.endOdometer === undefined ? "Em aberto" : formatKm(route.endOdometer)})
                         {audit?.flagged && (
                           <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                             {audit.deltaPercent > 0 ? "+" : ""}
