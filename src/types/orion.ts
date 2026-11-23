@@ -687,6 +687,8 @@ export type GarageChecklist = {
   generalNotes?: string;
 };
 
+export type GarageRouteStatus = "PLANEJADA" | "EM_ANDAMENTO" | "CONCLUIDA";
+
 export type GarageRoute = {
   id: string;
   vehicleId: string;
@@ -695,10 +697,11 @@ export type GarageRoute = {
   origin: string;
   destination: string;
   startOdometer: number;
-  endOdometer: number;
+  endOdometer?: number;
   distanceKm: number;
   estimatedKm?: number;
   purpose?: string;
+  status?: GarageRouteStatus;
 };
 
 export type GarageReminder = {
