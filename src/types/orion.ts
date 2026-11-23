@@ -596,6 +596,7 @@ export type GarageFueling = {
   id: string;
   vehicleId: string;
   driverId?: string;
+  tripId?: string;
   date: string;
   odometer: number;
   fuelType: GarageFuelType;
@@ -630,6 +631,7 @@ export type GarageExpense = {
   id: string;
   vehicleId: string;
   driverId?: string;
+  tripId?: string;
   category: string;
   date: string;
   amount: number;
