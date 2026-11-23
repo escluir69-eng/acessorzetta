@@ -90,6 +90,7 @@ export const QuickEntryModal: React.FC = () => {
   const nfceVideoRef = useRef<HTMLVideoElement | null>(null);
   const nfceScannerControlsRef = useRef<{ stop: () => void } | null>(null);
   const [fuelNotes, setFuelNotes] = useState("");
+  const [selectedTripId, setSelectedTripId] = useState("");
 
   // Maintenance state
   const [maintType, setMaintType] = useState<MaintenanceType>("PREVENTIVA");
@@ -152,6 +153,7 @@ export const QuickEntryModal: React.FC = () => {
     setStationName("");
     setNfceRaw("");
     setFuelNotes("");
+    setSelectedTripId("");
     setMaintCategory("");
     setProviderName("");
     setPartsCost("0");
@@ -268,6 +270,7 @@ export const QuickEntryModal: React.FC = () => {
         const parsed = fuelingSchema.safeParse({
           vehicleId,
           driverId: driverId || undefined,
+          tripId: selectedTripId || undefined,
           date,
           odometer: fuelOdometer,
           fuelType,
@@ -316,6 +319,7 @@ export const QuickEntryModal: React.FC = () => {
         const parsed = personalExpenseSchema.safeParse({
           vehicleId,
           driverId: driverId || undefined,
+          tripId: selectedTripId || undefined,
           category: expCategory,
           date,
           amount: expAmount,
@@ -496,6 +500,14 @@ export const QuickEntryModal: React.FC = () => {
 
           {quickEntryKind === "abastecimento" && (
             <div className="space-y-3.5">
+              <div className="rounded-lg border border-[#dce2e6] bg-[#f7f8fa] p-3">
+                <label className="mb-1 block text-xs font-semibold text-[#52616a]">Vincular a uma viagem (opcional)</label>
+                <select value={selectedTripId} onChange={(e) => setSelectedTripId(e.target.value)} className="h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs">
+                  <option value="">Sem vínculo — atribuição por período</option>
+                  {orionState.trips.map((trip) => <option key={trip.id} value={trip.id}>{trip.destination} · {trip.startDate} a {trip.endDate}</option>)}
+                </select>
+                <p className="mt-1 text-[10px] text-[#52616a]">Vinculado, o relatório atribui este lançamento diretamente à viagem.</p>
+              </div>
               <div className="rounded-xl border border-[#dce2e6] bg-[#f7f8fa] p-3">
                 <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-[#173d4a]">
                   <QrCode className="size-3.5" /> Extrair de Link NFC-e ou Chave (44 dígitos)
@@ -745,6 +757,14 @@ export const QuickEntryModal: React.FC = () => {
 
           {quickEntryKind === "gasto" && (
             <div className="space-y-3.5">
+              <div className="rounded-lg border border-[#dce2e6] bg-[#f7f8fa] p-3">
+                <label className="mb-1 block text-xs font-semibold text-[#52616a]">Vincular a uma viagem (opcional)</label>
+                <select value={selectedTripId} onChange={(e) => setSelectedTripId(e.target.value)} className="h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs">
+                  <option value="">Sem vínculo — atribuição por período</option>
+                  {orionState.trips.map((trip) => <option key={trip.id} value={trip.id}>{trip.destination} · {trip.startDate} a {trip.endDate}</option>)}
+                </select>
+                <p className="mt-1 text-[10px] text-[#52616a]">Vinculado, o relatório atribui este lançamento diretamente à viagem.</p>
+              </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-[#52616a]">
