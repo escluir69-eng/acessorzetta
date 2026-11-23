@@ -223,6 +223,17 @@ describe("garagem.calculations", () => {
     expect(parsed?.stationName).toBe("Posto Eixo");
   });
 
+  it("normaliza NFC-e com parâmetro chNFe e data brasileira sem depender da UF", () => {
+    const key = "53261112345678000190650010000123451000123456";
+    const parsed = parseNfceQrPayload(
+      `https://consulta.sefaz.example/nfce?chNFe=${key}&vNF=1.234,56&dhEmi=23%2F11%2F2026&xNome=Posto%20Central`,
+    );
+    expect(parsed?.nfceKey).toBe(key);
+    expect(parsed?.totalCost).toBe(1234.56);
+    expect(parsed?.date).toBe("2026-11-23");
+    expect(parsed?.stationName).toBe("Posto Central");
+  });
+
   it("valida schemas Zod pessoais permitindo abastecimento e percurso sem driverId", () => {
     expect(
       vehicleSchema.safeParse({
