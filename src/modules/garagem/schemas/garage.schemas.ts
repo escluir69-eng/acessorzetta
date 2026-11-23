@@ -32,7 +32,9 @@ export const vehicleSchema = z.object({
 export const driverSchema = z.object({
   name: z.string().trim().min(2, "Informe o nome do condutor"),
   cnhNumber: z.string().trim().min(5, "Número da CNH inválido").max(20, "CNH muito longa"),
-  cnhCategory: z.enum(["A", "B", "C", "D", "E", "AB", "AC", "AD", "AE"], {\n    errorMap: () => ({ message: "Selecione uma categoria válida da CNH" }),\n  }),
+  cnhCategory: z.enum(["A", "B", "C", "D", "E", "AB", "AC", "AD", "AE"], {
+    errorMap: () => ({ message: "Selecione uma categoria válida da CNH" }),
+  }),
   cnhExpiry: z.string().regex(isoDateRegex, "Data de validade inválida"),
   phone: z.string().trim().optional(),
   allowedVehicleIds: z.array(z.string()),
