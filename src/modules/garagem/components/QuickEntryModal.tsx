@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { enqueueGarageOfflineFueling, readGarageOfflineFuelingQueue, removeGarageOfflineFueling } from "../utils/garage-offline-fueling-queue";
 import { BrowserQRCodeReader } from "@zxing/browser";
 import {
   AlertTriangle,
@@ -56,7 +57,7 @@ const PERSONAL_EXPENSE_CATEGORIES = [
 ];
 
 export const QuickEntryModal: React.FC = () => {
-  const { state: orionState } = useOrion();
+  const { state: orionState, user } = useOrion();
   const {
     snapshot,
     selectedVehicleFilter,
@@ -179,6 +180,26 @@ export const QuickEntryModal: React.FC = () => {
     setErrorMsg(null);
   }, [isQuickEntryOpen, selectedVehicleFilter, snapshot.vehicles, snapshot.drivers]);
 
+  useEffect(() => {
+    const userId = user?.uid;
+    if (!userId || typeof window === "undefined") return;
+    const syncQueue = async () => {
+      if (!navigator.onLine) return;
+      const pending = readGarageOfflineFuelingQueue(userId);
+      for (const item of pending) {
+        try {
+          await addFueling(item.payload as Parameters<typeof addFueling>[0]);
+          if (removeGarageOfflineFueling(userId, item.id)) toast.success("Abastecimento offline sincronizado.");
+        } catch {
+          break; // keep the pending item for retry on the next online event
+        }
+      }
+    };
+    void syncQueue();
+    window.addEventListener("online", syncQueue);
+    return () => window.removeEventListener("online", syncQueue);
+  }, [user?.uid, addFueling]);
+
   if (!isQuickEntryOpen) return null;
 
   const selectedVehicle = snapshot.vehicles.find((v) => v.id === vehicleId);
@@ -292,8 +313,20 @@ export const QuickEntryModal: React.FC = () => {
           setErrorMsg(parsed.error.issues[0]?.message ?? "Dados do abastecimento inválidos.");
           return;
         }
-        await addFueling(parsed.data);
-        toast.success("Abastecimento salvo na garagem.");
+        try {
+          await addFueling(parsed.data);
+          toast.success("Abastecimento salvo na garagem.");
+        } catch (writeError) {
+          const userId = user?.uid;
+          const key = parsed.data.nfceKey?.replace(/\D/g, "") ?? "";
+          if (!navigator.onLine && userId && key.length === 44) {
+            const queued = enqueueGarageOfflineFueling(userId, { ...parsed.data, nfceKey: key });
+            if (!queued.ok) throw new Error("Sem conexão: não foi possível armazenar o abastecimento com segurança. Tente novamente.");
+            toast.warning("Abastecimento guardado offline. Será sincronizado quando a conexão voltar.");
+          } else {
+            throw writeError;
+          }
+        }
       } else if (quickEntryKind === "manutencao") {
         const parts = Number(partsCost) || 0;
         const labor = Number(laborCost) || 0;
