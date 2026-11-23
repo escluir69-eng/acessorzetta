@@ -159,13 +159,12 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
                 Categoria *
               </label>
               <select
-                value={cnhCategory}
-                onChange={(e) => setCnhCategory(e.target.value)}
+                value={cnhBaseCategory}
+                onChange={(e) => setCnhBaseCategory(e.target.value)}
                 className="h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs"
               >
-                <option value="A">A</option>
+                <option value="NENHUMA">Nenhuma</option>
                 <option value="B">B</option>
-                <option value="AB">AB</option>
                 <option value="C">C</option>
                 <option value="D">D</option>
                 <option value="E">E</option>
@@ -184,6 +183,19 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
               />
             </div>
           </div>
+
+          <label className="flex items-center gap-2 rounded-lg border border-[#dce2e6] bg-[#f7f8fa] px-3 py-2.5 text-xs font-semibold text-[#0c1928]">
+            <input
+              type="checkbox"
+              checked={hasCategoryA}
+              onChange={(e) => setHasCategoryA(e.target.checked)}
+              className="size-4 accent-[#173d4a]"
+            />
+            <span aria-hidden="true">🏍️</span> Habilitado para Moto (Cat. A)
+            <span className="ml-auto text-[10px] font-bold text-[#52616a]">
+              {resolveDriverCnhCategory(cnhBaseCategory, hasCategoryA) || "Selecione a categoria"}
+            </span>
+          </label>
 
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div>
