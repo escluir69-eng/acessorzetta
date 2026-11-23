@@ -237,7 +237,7 @@ export const RoutesRemindersPage: React.FC<RoutesRemindersPageProps> = ({ onNewR
                         )}
                       </div>
                     </div>
-                    {route.status !== "CONCLUIDA" && (
+                    {(route.status ?? "CONCLUIDA") !== "CONCLUIDA" && (
                       <button type="button" onClick={() => { setClosingRouteId(route.id); setClosingOdometer(""); setClosingChecks([]); }} className="shrink-0 rounded-lg border border-[#173d4a] px-2.5 py-1.5 text-[10px] font-semibold text-[#173d4a] hover:bg-[#edf1f3]">
                         Concluir
                       </button>
@@ -275,7 +275,7 @@ export const RoutesRemindersPage: React.FC<RoutesRemindersPageProps> = ({ onNewR
                   const route = snapshot.routes.find((item) => item.id === closingRouteId);
                   const finalKm = Number(closingOdometer);
                   if (!route || !Number.isFinite(finalKm) || finalKm <= route.startOdometer) { toast.error("O hodômetro final deve ser maior que o inicial."); return; }
-                  void completeRoute(closingRouteId, finalKm).then(() => { toast.success("Percurso concluído e hodômetro atualizado."); setClosingRouteId(null); }).catch((error) => toast.error(error instanceof Error ? error.message : "Não foi possível concluir o percurso."));
+                  void completeRoute(closingRouteId, finalKm, closingChecks).then(() => { toast.success("Percurso concluído e hodômetro atualizado."); setClosingRouteId(null); }).catch((error) => toast.error(error instanceof Error ? error.message : "Não foi possível concluir o percurso."));
                 }} className="rounded-lg bg-[#173d4a] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Confirmar conclusão</button>
               </div>
             </div>
