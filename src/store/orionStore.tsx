@@ -5233,7 +5233,21 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     const id = uid("grt");
     const vehicle = state.vehicles.find((v) => v.id === route.vehicleId);
     if (!vehicle) throw new Error("Veículo inválido.");
-    const distanceKm = Math.max(0, Number((route.endOdometer - route.startOdometer).toFixed(1)));
+    const status = route.status ?? "CONCLUIDA";
+    const endOdometer =
+      typeof route.endOdometer === "number" && Number.isFinite(route.endOdometer)
+        ? Math.max(0, Number(route.endOdometer))
+        : undefined;
+    if (status === "CONCLUIDA" && (endOdometer === undefined || endOdometer <= route.startOdometer)) {
+      throw new Error("Informe o hodômetro final maior que o inicial para concluir o percurso.");
+    }
+    if (endOdometer !== undefined && endOdometer <= route.startOdometer) {
+      throw new Error("O hodômetro final deve ser maior que o inicial.");
+    }
+    const distanceKm =
+      endOdometer === undefined
+        ? 0
+        : Math.max(0, Number((endOdometer - route.startOdometer).toFixed(1)));
     const batch = writeBatch(db);
     batch.set(
       doc(db, "users", ownerId, "garageRoutes", id),
@@ -5245,8 +5259,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         origin: clampStr(route.origin, 120),
         destination: clampStr(route.destination, 120),
         startOdometer: Math.max(0, Number(route.startOdometer)),
-        endOdometer: Math.max(0, Number(route.endOdometer)),
+        endOdometer,
         distanceKm,
+        status,
         estimatedKm:
           typeof route.estimatedKm === "number" && route.estimatedKm > 0
             ? Number(route.estimatedKm)
@@ -5256,9 +5271,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         updatedAt: serverTimestamp(),
       }),
     );
-    if (route.endOdometer > vehicle.odometerKm) {
+    if (endOdometer !== undefined && status === "CONCLUIDA" && endOdometer > vehicle.odometerKm) {
       batch.update(doc(db, "users", ownerId, "vehicles", vehicle.id), {
-        odometerKm: Number(route.endOdometer),
+        odometerKm: endOdometer,
         updatedAt: serverTimestamp(),
       });
     }
