@@ -702,6 +702,7 @@ export type GarageRoute = {
   estimatedKm?: number;
   purpose?: string;
   status?: GarageRouteStatus;
+  tripId?: string;
 };
 
 export type GarageReminder = {
