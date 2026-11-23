@@ -4,7 +4,7 @@ import type { TripPlan } from "@/types/orion";
 import type { FuelingRecord, PersonalVehicle, RouteTrip, PersonalVehicleExpense } from "../types/garage.types";
 
 const trip: TripPlan = { id: "t1", destination: "Brasília–Goiânia", startDate: "2026-11-01", endDate: "2026-11-03", budgetCents: 0, spentCents: 0, notes: "", status: "Concluída" };
-const route: RouteTrip = { id: "r1", vehicleId: "v1", tripId: "t1", date: "2026-11-02", origin: "Brasília", destination: "Goiânia", startOdometer: 1000, endOdometer: 250, distanceKm: 250, status: "CONCLUIDA" };
+const route: RouteTrip = { id: "r1", vehicleId: "v1", tripId: "t1", date: "2026-11-02", origin: "Brasília", destination: "Goiânia", startOdometer: 1000, endOdometer: 1250, distanceKm: 250, status: "CONCLUIDA" };
 const fuel: FuelingRecord = { id: "f1", vehicleId: "v1", date: "2026-11-02", odometer: 1200, fuelType: "GASOLINA", quantity: 30, unitPrice: 6, totalCost: 180, fullTank: true, calculatedAvg: 10 };
 const toll: PersonalVehicleExpense = { id: "e1", vehicleId: "v1", category: "Pedágio / Tag Sem Parar", date: "2026-11-02", amount: 24, description: "Pedágios" };
 const other: PersonalVehicleExpense = { id: "e2", vehicleId: "v1", category: "Estacionamento", date: "2026-11-02", amount: 15 };
