@@ -258,7 +258,7 @@ export interface OrionContextValue {
     options?: { autoCreateMaintenance?: boolean; setVehicleInMaintenance?: boolean },
   ) => Promise<void>;
   addGarageRoute: (route: Omit<GarageRoute, "id" | "distanceKm">) => Promise<void>;
-  completeGarageRoute: (id: string, endOdometer: number) => Promise<void>;
+  completeGarageRoute: (id: string, endOdometer: number, checklist: string[]) => Promise<void>;
   deleteGarageRoute: (id: string) => Promise<void>;
   addGarageReminder: (reminder: Omit<GarageReminder, "id" | "completed">) => Promise<void>;
   toggleGarageReminder: (id: string) => Promise<void>;
