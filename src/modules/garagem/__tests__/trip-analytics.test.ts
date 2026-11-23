@@ -21,7 +21,7 @@ describe("buildTripAnalyticsReport", () => {
     expect(report.costPerKm).toBeCloseTo(0.876);
     expect(report.averageConsumption).toBe(10);
     expect(report.estimatedRange).toBe(500);
-    expect(report.attributionNote).toContain("estimativas");
+    expect(report.attributionNote).toContain("estimados");
   });
 
   it("ignora percurso aberto e abastecimentos/gastos fora da janela", () => {
