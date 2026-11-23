@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { BrowserQRCodeReader } from "@zxing/browser";
 import {
   AlertTriangle,
   CarFront,
@@ -85,6 +86,9 @@ export const QuickEntryModal: React.FC = () => {
   const [fullTank, setFullTank] = useState(true);
   const [stationName, setStationName] = useState("");
   const [nfceRaw, setNfceRaw] = useState("");
+  const [isNfceScanning, setIsNfceScanning] = useState(false);
+  const nfceVideoRef = useRef<HTMLVideoElement | null>(null);
+  const nfceScannerControlsRef = useRef<{ stop: () => void } | null>(null);
   const [fuelNotes, setFuelNotes] = useState("");
 
   // Maintenance state
@@ -122,7 +126,12 @@ export const QuickEntryModal: React.FC = () => {
   const [purpose, setPurpose] = useState("");
 
   useEffect(() => {
-    if (!isQuickEntryOpen) return;
+    if (!isQuickEntryOpen) {
+      nfceScannerControlsRef.current?.stop();
+      nfceScannerControlsRef.current = null;
+      setIsNfceScanning(false);
+      return;
+    }
     const defaultVeh =
       snapshot.vehicles.find((v) => v.id === selectedVehicleFilter) ?? snapshot.vehicles[0];
     setVehicleId(defaultVeh?.id ?? "");
@@ -176,6 +185,37 @@ export const QuickEntryModal: React.FC = () => {
       setFuelType(v.fuelType === "FLEX" ? "GASOLINA" : v.fuelType);
       if (v.assignedDriverId) setDriverId(v.assignedDriverId);
     }
+  };
+
+  const startNfceCamera = async () => {
+    if (!nfceVideoRef.current || isNfceScanning) return;
+    setErrorMsg(null);
+    try {
+      const reader = new BrowserQRCodeReader();
+      const controls = await reader.decodeFromVideoDevice(
+        undefined,
+        nfceVideoRef.current,
+        (result, _error, scannerControls) => {
+          if (!result) return;
+          setNfceRaw(result.getText());
+          scannerControls.stop();
+          nfceScannerControlsRef.current = null;
+          setIsNfceScanning(false);
+          toast.success("QR Code lido. Confira os dados da NFC-e.");
+        },
+      );
+      nfceScannerControlsRef.current = controls;
+      setIsNfceScanning(true);
+    } catch (error) {
+      setIsNfceScanning(false);
+      setErrorMsg(error instanceof Error ? "Não foi possível acessar a câmera: " + error.message : "Não foi possível acessar a câmera. Verifique as permissões do navegador.");
+    }
+  };
+
+  const stopNfceCamera = () => {
+    nfceScannerControlsRef.current?.stop();
+    nfceScannerControlsRef.current = null;
+    setIsNfceScanning(false);
   };
 
   const handleParseNfce = () => {
@@ -469,12 +509,28 @@ export const QuickEntryModal: React.FC = () => {
                   />
                   <button
                     type="button"
+                    onClick={() => void startNfceCamera()}
+                    disabled={isNfceScanning}
+                    className="h-8 rounded-lg border border-[#b99555] px-3 text-xs font-semibold text-[#8a672e] hover:bg-[#b99555] hover:text-white disabled:opacity-50"
+                  >
+                    {isNfceScanning ? "Câmera ativa" : "Abrir câmera"}
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleParseNfce}
                     className="h-8 rounded-lg border border-[#173d4a] px-3 text-xs font-semibold text-[#173d4a] hover:bg-[#173d4a] hover:text-white"
                   >
                     Ler NFC-e
                   </button>
                 </div>
+                {isNfceScanning && (
+                  <div className="mt-3 space-y-2">
+                    <video ref={nfceVideoRef} className="max-h-56 w-full rounded-lg bg-black object-contain" muted playsInline />
+                    <button type="button" onClick={stopNfceCamera} className="h-8 rounded-lg border border-[#cbd3d8] px-3 text-xs font-semibold text-[#52616a]">
+                      Fechar câmera
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
