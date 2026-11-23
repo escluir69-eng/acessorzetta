@@ -44,6 +44,7 @@ export const driverSchema = z.object({
 export const fuelingSchema = z.object({
   vehicleId: z.string().min(1, "Selecione o veículo"),
   driverId: z.string().optional(),
+  tripId: z.string().max(128).optional(),
   date: z.string().regex(isoDateRegex, "Data inválida"),
   odometer: z.coerce.number().min(0, "Informe o hodômetro atual"),
   fuelType: z.enum(["GASOLINA", "ETANOL", "DIESEL", "GNV", "ELETRICO", "FLEX"]),
@@ -74,6 +75,7 @@ export const maintenanceSchema = z.object({
 export const personalExpenseSchema = z.object({
   vehicleId: z.string().min(1, "Selecione o veículo"),
   driverId: z.string().optional(),
+  tripId: z.string().max(128).optional(),
   category: z.string().trim().min(2, "Informe a categoria"),
   date: z.string().regex(isoDateRegex, "Data inválida"),
   amount: z.coerce.number().positive("O valor deve ser maior que zero"),
