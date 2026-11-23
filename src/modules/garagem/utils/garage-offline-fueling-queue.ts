@@ -31,7 +31,7 @@ function isValidItem(value: unknown): value is GarageOfflineFuelingQueueItem {
   const item = value as Partial<GarageOfflineFuelingQueueItem>;
   return typeof item.id === "string" && typeof item.createdAt === "number" &&
     !!item.payload && typeof item.payload === "object" &&
-    typeof item.payload.nfceKey === "string" && /^\\d{44}$/.test(item.payload.nfceKey);
+    typeof item.payload.nfceKey === "string" && /^\d{44}$/.test(item.payload.nfceKey);
 }
 
 /** Reads a user-scoped, NFC-e-only queue. Invalid entries are discarded. */
@@ -67,7 +67,7 @@ export function enqueueGarageOfflineFueling(
   payload: GarageOfflineFuelingDraft,
   now = Date.now(),
 ): { ok: boolean; duplicate: boolean; queue: GarageOfflineFuelingQueueItem[] } {
-  if (!userId || !/^\\d{44}$/.test(payload.nfceKey)) {
+  if (!userId || !/^\d{44}$/.test(payload.nfceKey)) {
     return { ok: false, duplicate: false, queue: [] };
   }
   const queue = readGarageOfflineFuelingQueue(userId);
