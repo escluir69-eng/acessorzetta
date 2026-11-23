@@ -103,14 +103,24 @@ export const routeTripSchema = z
     origin: z.string().trim().min(2, "Informe a origem"),
     destination: z.string().trim().min(2, "Informe o destino"),
     startOdometer: z.coerce.number().min(0, "Hodômetro inicial inválido"),
-    endOdometer: z.coerce.number().min(0, "Hodômetro final inválido"),
+    endOdometer: z.coerce.number().min(0, "Hodômetro final inválido").optional(),
+    status: z.enum(["PLANEJADA", "EM_ANDAMENTO", "CONCLUIDA"]).optional(),
     estimatedKm: z.coerce.number().min(0).optional(),
     purpose: z.string().trim().optional(),
   })
-  .refine((data) => data.endOdometer > data.startOdometer, {
-    message: "O hodômetro final deve ser maior que o hodômetro inicial",
-    path: ["endOdometer"],
-  });
+  .refine(
+    (data) => {
+      const status = data.status ?? "CONCLUIDA";
+      if (status === "CONCLUIDA") {
+        return data.endOdometer !== undefined && data.endOdometer > data.startOdometer;
+      }
+      return data.endOdometer === undefined || data.endOdometer > data.startOdometer;
+    },
+    {
+      message: "Informe um hodômetro final maior que o inicial para concluir o percurso",
+      path: ["endOdometer"],
+    },
+  );
 
 export const reminderSchema = z
   .object({
