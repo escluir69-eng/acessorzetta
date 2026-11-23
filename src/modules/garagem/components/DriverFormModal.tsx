@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { todayBR } from "@/lib/domain/money";
 import { useGarage } from "../context/garageContext";
 import { driverSchema } from "../schemas/garage.schemas";
-import type { PersonalDriver } from "../types/garage.types";
+import type { PersonalDriver } from "../types/garage.types";\nimport { resolveDriverCnhCategory } from "../utils/driver-category";
 
 interface DriverFormModalProps {
   open: boolean;
@@ -20,7 +20,7 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
   const { snapshot, upsertDriver } = useGarage();
   const [name, setName] = useState("");
   const [cnhNumber, setCnhNumber] = useState("");
-  const [cnhCategory, setCnhCategory] = useState("B");
+  const [cnhBaseCategory, setCnhBaseCategory] = useState("B");\n  const [hasCategoryA, setHasCategoryA] = useState(false);
   const [cnhExpiry, setCnhExpiry] = useState(todayBR());
   const [phone, setPhone] = useState("");
   const [allowedVehicleIds, setAllowedVehicleIds] = useState<string[]>([]);
@@ -33,7 +33,7 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
     if (editingDriver) {
       setName(editingDriver.name);
       setCnhNumber(editingDriver.cnhNumber);
-      setCnhCategory(editingDriver.cnhCategory);
+      const existingCategory = editingDriver.cnhCategory.toUpperCase();\n      setHasCategoryA(existingCategory.includes("A"));\n      setCnhBaseCategory(\n        existingCategory === "A" ? "NENHUMA" : existingCategory.replace("A", "") || "NENHUMA",\n      );
       setCnhExpiry(editingDriver.cnhExpiry);
       setPhone(editingDriver.phone ?? "");
       setAllowedVehicleIds(editingDriver.allowedVehicleIds);
@@ -41,7 +41,7 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
     } else {
       setName("");
       setCnhNumber("");
-      setCnhCategory("B");
+      setCnhBaseCategory("B");\n      setHasCategoryA(false);
       setCnhExpiry(todayBR());
       setPhone("");
       setAllowedVehicleIds(snapshot.vehicles.map((v) => v.id));
@@ -65,7 +65,7 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
     const parsed = driverSchema.safeParse({
       name,
       cnhNumber,
-      cnhCategory,
+      cnhCategory: resolveDriverCnhCategory(cnhBaseCategory, hasCategoryA),
       cnhExpiry,
       phone: phone || undefined,
       allowedVehicleIds,
