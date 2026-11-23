@@ -290,6 +290,7 @@ describe("garagem.calculations", () => {
         destination: "Pirenópolis",
         startOdometer: 25000,
         status: "PLANEJADA",
+        tripId: "trip-123",
         estimatedKm: 150,
       }).success,
     ).toBe(true);
