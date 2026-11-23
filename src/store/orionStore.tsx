@@ -4823,39 +4823,54 @@ export function OrionProvider({ children }: { children: ReactNode }) {
 
   const addGarageFueling: OrionContextValue["addGarageFueling"] = async (fueling) => {
     const ownerId = requireUid();
-    const id = uid("gf");
     const vehicle = state.vehicles.find((v) => v.id === fueling.vehicleId);
     if (!vehicle) throw new Error("Veículo inválido.");
-    const batch = writeBatch(db);
-    batch.set(
-      doc(db, "users", ownerId, "garageFuelings", id),
-      stripUndefined({
-        ownerId,
-        vehicleId: fueling.vehicleId,
-        driverId: fueling.driverId ? clampStr(fueling.driverId, 128) : undefined,
-        date: fueling.date,
-        odometer: Math.max(0, Number(fueling.odometer)),
-        fuelType: fueling.fuelType,
-        quantity: Number(fueling.quantity),
-        unitPrice: Number(fueling.unitPrice),
-        totalCost: Number(fueling.totalCost),
-        fullTank: Boolean(fueling.fullTank),
-        stationName: fueling.stationName ? clampStr(fueling.stationName, 120) : undefined,
-        nfceKey: fueling.nfceKey ? clampStr(fueling.nfceKey, 80) : undefined,
-        notes: fueling.notes ? clampStr(fueling.notes, 300) : undefined,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      }),
-    );
-    if (fueling.odometer > vehicle.odometerKm) {
-      batch.update(doc(db, "users", ownerId, "vehicles", vehicle.id), {
-        odometerKm: Number(fueling.odometer),
-        updatedAt: serverTimestamp(),
-      });
+    const rawNfceKey = fueling.nfceKey?.trim();
+    if (rawNfceKey && !/^\d{44}$/.test(rawNfceKey)) {
+      throw new Error("A chave da NFC-e deve conter exatamente 44 dígitos. Use Ler NFC-e para extrair a chave.");
     }
+    const id = rawNfceKey ? `nfce-${rawNfceKey}` : uid("gf");
+    const fuelingRef = doc(db, "users", ownerId, "garageFuelings", id);
+    const vehicleRef = doc(db, "users", ownerId, "vehicles", vehicle.id);
+    const payload = stripUndefined({
+      ownerId,
+      vehicleId: fueling.vehicleId,
+      driverId: fueling.driverId ? clampStr(fueling.driverId, 128) : undefined,
+      date: fueling.date,
+      odometer: Math.max(0, Number(fueling.odometer)),
+      fuelType: fueling.fuelType,
+      quantity: Number(fueling.quantity),
+      unitPrice: Number(fueling.unitPrice),
+      totalCost: Number(fueling.totalCost),
+      fullTank: Boolean(fueling.fullTank),
+      stationName: fueling.stationName ? clampStr(fueling.stationName, 120) : undefined,
+      nfceKey: rawNfceKey,
+      notes: fueling.notes ? clampStr(fueling.notes, 300) : undefined,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
     try {
-      await batch.commit();
+      if (rawNfceKey) {
+        await runTransaction(db, async (tx) => {
+          const existing = await tx.get(fuelingRef);
+          if (existing.exists()) throw new Error("Esta NFC-e já foi registrada na garagem.");
+          const vehicleSnap = await tx.get(vehicleRef);
+          if (!vehicleSnap.exists()) throw new Error("Veículo não encontrado.");
+          tx.set(fuelingRef, payload);
+          if (Number(fueling.odometer) > Number(vehicleSnap.data()["odometerKm"] ?? 0)) {
+            tx.update(vehicleRef, { odometerKm: Number(fueling.odometer), updatedAt: serverTimestamp() });
+          }
+        });
+      } else {
+        const batch = writeBatch(db);
+        batch.set(fuelingRef, payload);
+        if (fueling.odometer > vehicle.odometerKm) {
+          batch.update(vehicleRef, { odometerKm: Number(fueling.odometer), updatedAt: serverTimestamp() });
+        }
+        await batch.commit();
+      }
     } catch (err) {
+      if (err instanceof Error && /NFC-e|Veículo não encontrado/.test(err.message)) throw err;
       handleFirestoreError(err, OperationType.CREATE, `users/${ownerId}/garageFuelings/${id}`);
     }
   };
