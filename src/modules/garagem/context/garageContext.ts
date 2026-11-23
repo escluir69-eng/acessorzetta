@@ -50,7 +50,7 @@ export interface GarageContextValue {
     options?: { autoCreateMaintenance?: boolean; setVehicleInMaintenance?: boolean },
   ) => Promise<void>;
   addRoute: (r: Omit<GarageSnapshot["routes"][number], "id" | "distanceKm">) => Promise<void>;
-  completeRoute: (id: string, endOdometer: number) => Promise<void>;
+  completeRoute: (id: string, endOdometer: number, checklist: string[]) => Promise<void>;
   deleteRoute: (id: string) => Promise<void>;
   addReminder: (
     rem: Omit<GarageSnapshot["reminders"][number], "id" | "completed">,
