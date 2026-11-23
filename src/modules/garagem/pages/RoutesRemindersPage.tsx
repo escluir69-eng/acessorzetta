@@ -213,6 +213,11 @@ export const RoutesRemindersPage: React.FC<RoutesRemindersPageProps> = ({ onNewR
                       <div className="font-bold text-[#0c1928]">
                         {route.origin} → {route.destination}
                       </div>
+                      {route.tripId && state.trips.find((trip) => trip.id === route.tripId) && (
+                        <div className="mt-0.5 text-[10px] font-semibold text-[#173d4a]">
+                          Viagem: {state.trips.find((trip) => trip.id === route.tripId)?.destination}
+                        </div>
+                      )}
                       <div className="mt-0.5 text-[#52616a]">
                         {formatDateBR(route.date)} · {veh?.plate ?? ""} · {({ PLANEJADA: "Planejada", EM_ANDAMENTO: "Em andamento", CONCLUIDA: "Concluída" }[route.status ?? "CONCLUIDA"])} ·{" "}
                         <span className="tabular-nums font-semibold text-[#0c1928]">
