@@ -7,9 +7,7 @@ export function resolveDriverCnhCategory(baseCategory: string, hasCategoryA: boo
     throw new Error("Categoria principal da CNH inválida.");
   }
   if (hasCategoryA) return normalizedBase === "NENHUMA" ? "A" : `A${normalizedBase}`;
-  if (normalizedBase === "NENHUMA") {
-    throw new Error("Selecione uma categoria principal ou habilite a categoria A.");
-  }
+  if (normalizedBase === "NENHUMA") return "";
   return normalizedBase;
 }
 
