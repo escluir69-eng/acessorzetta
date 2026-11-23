@@ -108,6 +108,9 @@ export const QuickEntryModal: React.FC = () => {
 
   // Fine state
   const [infractionCode, setInfractionCode] = useState("");
+  const [fineTime, setFineTime] = useState("");
+  const [fineNoticeText, setFineNoticeText] = useState("");
+  const [fineNoticeExtract, setFineNoticeExtract] = useState<FineNoticeExtract | null>(null);
   const [fineDescription, setFineDescription] = useState("");
   const [fineLocation, setFineLocation] = useState("");
   const [finePoints, setFinePoints] = useState("4");
@@ -162,6 +165,9 @@ export const QuickEntryModal: React.FC = () => {
     setExpAmount("");
     setExpDescription("");
     setInfractionCode("");
+    setFineTime("");
+    setFineNoticeText("");
+    setFineNoticeExtract(null);
     setFineDescription("");
     setFineLocation("");
     setFinePoints("4");
@@ -338,6 +344,7 @@ export const QuickEntryModal: React.FC = () => {
           vehicleId,
           driverId: suggestedDriver,
           date,
+          time: fineTime || undefined,
           infractionCode,
           description: fineDescription,
           location: fineLocation || undefined,
@@ -812,7 +819,34 @@ export const QuickEntryModal: React.FC = () => {
             </div>
           )}
 
-          {quickEntryKind === "multa" && (
+                        <section className="rounded-xl border border-[#dce2e6] bg-[#f7f8fa] p-3.5 space-y-2">
+                <div className="text-xs font-semibold text-[#173d4a]">Preenchimento assistido da notificação</div>
+                <p className="text-[11px] text-[#52616a]">Cole o texto copiado da notificação ou do OCR externo. A extração local é parcial; confira código, data, valor e pontos na própria notificação antes de salvar.</p>
+                <textarea value={fineNoticeText} onChange={(e) => { setFineNoticeText(e.target.value); setFineNoticeExtract(null); }} rows={3} placeholder="Cole aqui o texto da notificação de infração…" className="w-full rounded-lg border border-[#cbd3d8] bg-white p-2.5 text-xs" />
+                <button type="button" disabled={!fineNoticeText.trim()} onClick={() => setFineNoticeExtract(parseFineNoticeText(fineNoticeText))} className="rounded-lg border border-[#cbd3d8] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-50">Identificar dados</button>
+                {fineNoticeExtract && (
+                  <div className="rounded-lg border border-[#dce2e6] bg-white p-3 space-y-1 text-xs">
+                    <div className="font-semibold">Dados encontrados para revisão</div>
+                    <div>Código: {fineNoticeExtract.infractionCode ?? "não identificado"}</div>
+                    <div>Data: {fineNoticeExtract.date ?? "não identificada"} · Hora: {fineNoticeExtract.time ?? "—"}</div>
+                    <div>Pontos: {fineNoticeExtract.points ?? "—"} · Valor: {fineNoticeExtract.amount ? formatReaisBRL(fineNoticeExtract.amount) : "—"}</div>
+                    <div>Local: {fineNoticeExtract.location ?? "não identificado"}</div>
+                    <div>Descrição: {fineNoticeExtract.description ?? "não identificada"}</div>
+                    <button type="button" onClick={() => {
+                      if (fineNoticeExtract.infractionCode) setInfractionCode(fineNoticeExtract.infractionCode);
+                      if (fineNoticeExtract.date) setDate(fineNoticeExtract.date);
+                      if (fineNoticeExtract.time) setFineTime(fineNoticeExtract.time);
+                      if (fineNoticeExtract.points) setFinePoints(String(fineNoticeExtract.points));
+                      if (fineNoticeExtract.amount) setFineAmount(String(fineNoticeExtract.amount));
+                      if (fineNoticeExtract.location) setFineLocation(fineNoticeExtract.location);
+                      if (fineNoticeExtract.description) setFineDescription(fineNoticeExtract.description);
+                      toast.success("Dados aplicados. Confira o formulário antes de registrar.");
+                    }} className="mt-1 rounded-lg bg-[#173d4a] px-3 py-1.5 text-xs font-semibold text-white">Aplicar campos identificados</button>
+                  </div>
+                )}
+              </section>
+
+{quickEntryKind === "multa" && (
             <div className="space-y-3.5">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
@@ -885,6 +919,11 @@ export const QuickEntryModal: React.FC = () => {
                     <option value="INDICADO">Condutor indicado</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#52616a]">Hora da infração</label>
+                <input type="time" value={fineTime} onChange={(e) => setFineTime(e.target.value)} className="h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs" />
               </div>
 
               <div>
