@@ -494,13 +494,14 @@ async function persistCardInstallmentProvision(
 
   const anchor = transaction.purchaseDate || (() => {
     const date = new Date(`${transaction.date}T12:00:00.000Z`);
+    date.setUTCDate(1);
     date.setUTCMonth(date.getUTCMonth() - (number - 1));
     return date.toISOString().slice(0, 10);
   })();
   const fingerprint = [accountId, transaction.description.trim().toLocaleLowerCase("pt-BR"), anchor, total].join("|");
   const groupHash = createHash("sha256").update(fingerprint).digest("hex").slice(0, 24);
   const sourceRecordId = `pluggy:${slot}:card-purchase:${groupHash}`;
-  const installments: Array<{ period: string; dueDate: string; year: number; month: string }> = [];
+  const installments: Array<{ number: number; period: string; dueDate: string; year: number; month: string }> = [];
 
   for (let installment = number; installment <= total; installment++) {
     const date = new Date(`${anchor}T12:00:00.000Z`);
@@ -509,13 +510,13 @@ async function persistCardInstallmentProvision(
     const year = date.getUTCFullYear();
     const month = String(date.getUTCMonth() + 1).padStart(2, "0");
     const day = Math.min(Math.max(1, dueDay), new Date(Date.UTC(year, date.getUTCMonth() + 1, 0)).getUTCDate());
-    installments.push({ year, month, period: `${year}-${month}`, dueDate: `${year}-${month}-${String(day).padStart(2, "0")}` });
+    installments.push({ number: installment, year, month, period: `${year}-${month}`, dueDate: `${year}-${month}-${String(day).padStart(2, "0")}` });
   }
 
-  const byYear = new Map<number, Array<{ month: string; dueDate: string }>>();
+  const byYear = new Map<number, Array<{ number: number; month: string; dueDate: string }>>();
   for (const installment of installments) {
     const entries = byYear.get(installment.year) ?? [];
-    entries.push({ month: installment.month, dueDate: installment.dueDate });
+    entries.push({ number: installment.number, month: installment.month, dueDate: installment.dueDate });
     byYear.set(installment.year, entries);
   }
 
@@ -546,11 +547,11 @@ async function persistCardInstallmentProvision(
       dueDate: installment.dueDate,
       expectedCents: amountCents,
       sourceAnnualId: annualId,
-      installmentNumber: index + 1,
+      installmentNumber: installment.number,
       expenseKind: "debt",
       cardId,
       isCardInvoice: false,
-      note: `Parcela ${index + 1}/${total} · Compra em ${anchor}`,
+      note: `Parcela ${installment.number}/${total} · Compra em ${anchor}`,
       sourceRecordId,
     });
   }
