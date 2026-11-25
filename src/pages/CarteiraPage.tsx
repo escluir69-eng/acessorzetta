@@ -108,8 +108,14 @@ export function CarteiraPage() {
   }, [state.cards]);
 
   const filteredTx = useMemo(() => {
+    const grouped = new Map<string, (typeof state.transactions)[number]>();
+    for (const transaction of state.transactions) {
+      const key = transaction.purchaseGroupId ? `purchase:${transaction.purchaseGroupId}` : transaction.id;
+      const current = grouped.get(key);
+      if (!current || (transaction.installmentNumber ?? Number.MAX_SAFE_INTEGER) < (current.installmentNumber ?? Number.MAX_SAFE_INTEGER)) grouped.set(key, transaction);
+    }
     const q = txSearch.trim().toLowerCase();
-    return state.transactions.filter((t) => {
+    return [...grouped.values()].filter((t) => {
       if (!q) return true;
       return `${t.description} ${t.accountName} ${t.institution} ${t.category} ${t.date}`
         .toLowerCase()
