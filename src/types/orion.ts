@@ -11,6 +11,7 @@ export type BankAccount = {
   balanceCents: number;
   color: string;
   sourceRecordId?: string;
+  isHidden?: boolean;
 };
 
 export type CardBrand = "VISA" | "MASTERCARD" | "ELO" | "AMEX" | "HIPERCARD" | "OTHER";
