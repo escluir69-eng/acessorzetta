@@ -126,11 +126,7 @@ export type RevenueEvent = {
 };
 
 export type PaymentEventKind =
-  | "pagamento"
-  | "parcial"
-  | "quitacao_antecipada"
-  | "correcao"
-  | "estorno";
+  "pagamento" | "parcial" | "quitacao_antecipada" | "correcao" | "estorno";
 
 export type PaymentEventSnapshot = {
   paidCents?: number | null;
@@ -175,13 +171,7 @@ export type PaymentEvent = {
 };
 
 export type ContractStatus =
-  | "Em andamento"
-  | "Atrasado"
-  | "Concluído"
-  | "Pausado"
-  | "Perdoado"
-  | "Ajuizado"
-  | "Renegociado";
+  "Em andamento" | "Atrasado" | "Concluído" | "Pausado" | "Perdoado" | "Ajuizado" | "Renegociado";
 
 export type CorrectionIndex = "Sem correção" | "IPCA" | "IGP-M" | "Personalizado";
 
@@ -338,13 +328,7 @@ export type CardMonthSnapshot = {
 export type PersonalKind = "birthday" | "work" | "appointment" | "event" | "tasks";
 
 export type AgendaRecurrence =
-  | "none"
-  | "daily"
-  | "12x36"
-  | "weekly"
-  | "monthly"
-  | "yearly"
-  | "custom";
+  "none" | "daily" | "12x36" | "weekly" | "monthly" | "yearly" | "custom";
 
 export type AgendaChecklistItem = {
   key: string;

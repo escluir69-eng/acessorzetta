@@ -37,12 +37,26 @@ function getCardDesign(card: CreditCardAccount) {
   return { gradient: "linear-gradient(135deg,#173d4a,#0c1928)", label: card.institution };
 }
 
-function groupCardPurchaseTransactions<T extends { id: string; purchaseGroupId?: string; installmentNumber?: number; totalAmountCents?: number; amountCents: number }>(transactions: T[]): T[] {
+function groupCardPurchaseTransactions<
+  T extends {
+    id: string;
+    purchaseGroupId?: string;
+    installmentNumber?: number;
+    totalAmountCents?: number;
+    amountCents: number;
+  },
+>(transactions: T[]): T[] {
   const grouped = new Map<string, T>();
   for (const transaction of transactions) {
-    const key = transaction.purchaseGroupId ? `purchase:${transaction.purchaseGroupId}` : transaction.id;
+    const key = transaction.purchaseGroupId
+      ? `purchase:${transaction.purchaseGroupId}`
+      : transaction.id;
     const current = grouped.get(key);
-    if (!current || (transaction.installmentNumber ?? Number.MAX_SAFE_INTEGER) < (current.installmentNumber ?? Number.MAX_SAFE_INTEGER)) {
+    if (
+      !current ||
+      (transaction.installmentNumber ?? Number.MAX_SAFE_INTEGER) <
+        (current.installmentNumber ?? Number.MAX_SAFE_INTEGER)
+    ) {
       grouped.set(key, transaction);
     }
   }
@@ -70,8 +84,15 @@ export function CarteiraPage() {
   const { state, user, addBankAccount, addCreditCard } = useOrion();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCardIdx, setSelectedCardIdx] = useState(0);
-  const [selectedTransaction, setSelectedTransaction] = useState<(typeof state.transactions)[number] | null>(null);
-  const [selectedSnapshotTransaction, setSelectedSnapshotTransaction] = useState<{ description: string; date: string; amount: number; category?: string } | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<
+    (typeof state.transactions)[number] | null
+  >(null);
+  const [selectedSnapshotTransaction, setSelectedSnapshotTransaction] = useState<{
+    description: string;
+    date: string;
+    amount: number;
+    category?: string;
+  } | null>(null);
   const [bankMenuId, setBankMenuId] = useState<string | null>(null);
   const [bankEditingId, setBankEditingId] = useState<string | null>(null);
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
@@ -80,8 +101,20 @@ export function CarteiraPage() {
   const [txSearch, setTxSearch] = useState(() => searchParams.get("q") ?? "");
   const [expandedSnapIds, setExpandedSnapIds] = useState<Record<string, boolean>>({});
   const [snapshotMenuId, setSnapshotMenuId] = useState<string | null>(null);
-  const [editingSnapshot, setEditingSnapshot] = useState<(typeof state.cardMonthSnapshots)[number] | null>(null);
-  const [snapshotForm, setSnapshotForm] = useState({ accountId: "", period: "", capturedAt: "", closingDate: "", dueDate: "", invoice: "", totalLimit: "", usedLimit: "", availableLimit: "" });
+  const [editingSnapshot, setEditingSnapshot] = useState<
+    (typeof state.cardMonthSnapshots)[number] | null
+  >(null);
+  const [snapshotForm, setSnapshotForm] = useState({
+    accountId: "",
+    period: "",
+    capturedAt: "",
+    closingDate: "",
+    dueDate: "",
+    invoice: "",
+    totalLimit: "",
+    usedLimit: "",
+    availableLimit: "",
+  });
   const [savingSnapshot, setSavingSnapshot] = useState(false);
 
   useEffect(() => {
@@ -106,8 +139,18 @@ export function CarteiraPage() {
 
   const activeCard = state.cards[selectedCardIdx] ?? state.cards[0];
   const selectedCounterpart = useMemo(() => {
-    if (!selectedTransaction || !/pagamento|fatura|boleto/i.test(selectedTransaction.description)) return null;
-    return state.transactions.find((tx) => tx.id !== selectedTransaction.id && tx.accountType !== selectedTransaction.accountType && Math.abs(tx.amountCents) === Math.abs(selectedTransaction.amountCents) && tx.date === selectedTransaction.date && /pagamento|fatura|boleto/i.test(tx.description)) ?? null;
+    if (!selectedTransaction || !/pagamento|fatura|boleto/i.test(selectedTransaction.description))
+      return null;
+    return (
+      state.transactions.find(
+        (tx) =>
+          tx.id !== selectedTransaction.id &&
+          tx.accountType !== selectedTransaction.accountType &&
+          Math.abs(tx.amountCents) === Math.abs(selectedTransaction.amountCents) &&
+          tx.date === selectedTransaction.date &&
+          /pagamento|fatura|boleto/i.test(tx.description),
+      ) ?? null
+    );
   }, [selectedTransaction, state.transactions]);
 
   const sortedSnapshots = useMemo(() => {
@@ -149,13 +192,25 @@ export function CarteiraPage() {
     setSnapshotMenuId(null);
     setEditingSnapshot(snap);
     setSnapshotForm({
-      accountId: cardLookup.get(snap.accountId)?.id ?? "", period: snap.period,
+      accountId: cardLookup.get(snap.accountId)?.id ?? "",
+      period: snap.period,
       capturedAt: snap.capturedAt ? new Date(snap.capturedAt).toISOString().slice(0, 16) : "",
-      closingDate: snap.closingDate ?? "", dueDate: snap.dueDate ?? "",
-      invoice: snap.invoiceCents === null ? "" : (snap.invoiceCents / 100).toFixed(2).replace(".", ","),
-      totalLimit: snap.totalLimitCents === null ? "" : (snap.totalLimitCents / 100).toFixed(2).replace(".", ","),
-      usedLimit: snap.usedLimitCents === null ? "" : (snap.usedLimitCents / 100).toFixed(2).replace(".", ","),
-      availableLimit: snap.availableLimitCents === null ? "" : (snap.availableLimitCents / 100).toFixed(2).replace(".", ","),
+      closingDate: snap.closingDate ?? "",
+      dueDate: snap.dueDate ?? "",
+      invoice:
+        snap.invoiceCents === null ? "" : (snap.invoiceCents / 100).toFixed(2).replace(".", ","),
+      totalLimit:
+        snap.totalLimitCents === null
+          ? ""
+          : (snap.totalLimitCents / 100).toFixed(2).replace(".", ","),
+      usedLimit:
+        snap.usedLimitCents === null
+          ? ""
+          : (snap.usedLimitCents / 100).toFixed(2).replace(".", ","),
+      availableLimit:
+        snap.availableLimitCents === null
+          ? ""
+          : (snap.availableLimitCents / 100).toFixed(2).replace(".", ","),
     });
   }
 
@@ -163,13 +218,21 @@ export function CarteiraPage() {
     e.preventDefault();
     if (!editingSnapshot || !user?.uid || savingSnapshot) return;
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(snapshotForm.period) || !snapshotForm.capturedAt) {
-      toast.error("Informe uma competência e data de captura válidas."); return;
+      toast.error("Informe uma competência e data de captura válidas.");
+      return;
     }
-    const cents = (value: string) => value.trim() ? parseBRL(value) : null;
-    const invoice = cents(snapshotForm.invoice), totalLimit = cents(snapshotForm.totalLimit);
-    const usedLimit = cents(snapshotForm.usedLimit), availableLimit = cents(snapshotForm.availableLimit);
-    if ([invoice, totalLimit, usedLimit, availableLimit].some((v) => v !== null && (!Number.isSafeInteger(v) || v < 0))) {
-      toast.error("Informe valores monetários válidos e não negativos."); return;
+    const cents = (value: string) => (value.trim() ? parseBRL(value) : null);
+    const invoice = cents(snapshotForm.invoice),
+      totalLimit = cents(snapshotForm.totalLimit);
+    const usedLimit = cents(snapshotForm.usedLimit),
+      availableLimit = cents(snapshotForm.availableLimit);
+    if (
+      [invoice, totalLimit, usedLimit, availableLimit].some(
+        (v) => v !== null && (!Number.isSafeInteger(v) || v < 0),
+      )
+    ) {
+      toast.error("Informe valores monetários válidos e não negativos.");
+      return;
     }
     const linked = state.cards.find((card) => card.id === snapshotForm.accountId);
     setSavingSnapshot(true);
@@ -179,37 +242,59 @@ export function CarteiraPage() {
       if (!current.exists()) throw new Error("Este retrato não existe mais.");
       await updateDoc(ref, {
         accountId: linked?.id ?? editingSnapshot.accountId,
-        ...(linked ? { accountName: linked.institution + " · " + linked.name, isUnlinked: false } : { isUnlinked: true }),
-        period: snapshotForm.period, capturedAt: new Date(snapshotForm.capturedAt).toISOString(),
-        closingDate: snapshotForm.closingDate || null, dueDate: snapshotForm.dueDate || null,
-        invoiceCents: invoice, totalLimitCents: totalLimit, usedLimitCents: usedLimit,
-        availableLimitCents: availableLimit, updatedAt: new Date().toISOString(),
+        ...(linked
+          ? { accountName: linked.institution + " · " + linked.name, isUnlinked: false }
+          : { isUnlinked: true }),
+        period: snapshotForm.period,
+        capturedAt: new Date(snapshotForm.capturedAt).toISOString(),
+        closingDate: snapshotForm.closingDate || null,
+        dueDate: snapshotForm.dueDate || null,
+        invoiceCents: invoice,
+        totalLimitCents: totalLimit,
+        usedLimitCents: usedLimit,
+        availableLimitCents: availableLimit,
+        updatedAt: new Date().toISOString(),
       });
-      setEditingSnapshot(null); toast.success("Retrato mensal atualizado.");
+      setEditingSnapshot(null);
+      toast.success("Retrato mensal atualizado.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o retrato.");
-    } finally { setSavingSnapshot(false); }
+    } finally {
+      setSavingSnapshot(false);
+    }
   }
 
   async function deleteSnapshot(snap: (typeof state.cardMonthSnapshots)[number]) {
     setSnapshotMenuId(null);
-    if (!user?.uid) { toast.error("Entre na sua conta para excluir este retrato."); return; }
-    if (snap.transactions.length > 0) {
-      toast.error("Este retrato contém lançamentos. Remova ou desvincule-os por um fluxo próprio antes de excluir."); return;
+    if (!user?.uid) {
+      toast.error("Entre na sua conta para excluir este retrato.");
+      return;
     }
-    if (!window.confirm("Excluir somente este retrato histórico? O cartão cadastrado não será alterado.")) return;
+    if (snap.transactions.length > 0) {
+      toast.error(
+        "Este retrato contém lançamentos. Remova ou desvincule-os por um fluxo próprio antes de excluir.",
+      );
+      return;
+    }
+    if (
+      !window.confirm(
+        "Excluir somente este retrato histórico? O cartão cadastrado não será alterado.",
+      )
+    )
+      return;
     try {
       const ref = doc(db, "users", user.uid, "cardMonthSnapshots", snap.id);
       const current = await getDoc(ref);
       if (!current.exists()) throw new Error("Este retrato já foi removido.");
       const data = current.data();
-      if (Array.isArray(data["transactions"]) && data["transactions"].length > 0) throw new Error("O retrato recebeu lançamentos e não pode ser excluído.");
-      await deleteDoc(ref); toast.success("Retrato histórico excluído.");
+      if (Array.isArray(data["transactions"]) && data["transactions"].length > 0)
+        throw new Error("O retrato recebeu lançamentos e não pode ser excluído.");
+      await deleteDoc(ref);
+      toast.success("Retrato histórico excluído.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível excluir o retrato.");
     }
   }
-
 
   async function submitBank(e: React.FormEvent) {
     e.preventDefault();
@@ -252,21 +337,52 @@ export function CarteiraPage() {
   }
 
   function openBankEditor(bank: (typeof state.banks)[number]) {
-    setBankMenuId(null); setBankEditingId(bank.id); setBankInst(bank.institution); setBankName(bank.name); setBankNum(bank.number); setBankBal((bank.balanceCents / 100).toFixed(2).replace(".", ",")); setBankOpen(true);
+    setBankMenuId(null);
+    setBankEditingId(bank.id);
+    setBankInst(bank.institution);
+    setBankName(bank.name);
+    setBankNum(bank.number);
+    setBankBal((bank.balanceCents / 100).toFixed(2).replace(".", ","));
+    setBankOpen(true);
   }
 
   async function toggleBankHidden(bank: (typeof state.banks)[number]) {
     if (!user?.uid) return;
-    try { await updateDoc(doc(db, "users", user.uid, "banks", bank.id), { isHidden: !bank.isHidden, updatedAt: new Date().toISOString() }); setBankMenuId(null); toast.success(bank.isHidden ? "Conta exibida novamente." : "Conta ocultada."); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível alterar a visibilidade."); }
+    try {
+      await updateDoc(doc(db, "users", user.uid, "banks", bank.id), {
+        isHidden: !bank.isHidden,
+        updatedAt: new Date().toISOString(),
+      });
+      setBankMenuId(null);
+      toast.success(bank.isHidden ? "Conta exibida novamente." : "Conta ocultada.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Não foi possível alterar a visibilidade.",
+      );
+    }
   }
 
   async function removeBank(bank: (typeof state.banks)[number]) {
     if (!user?.uid) return;
-    if (state.transactions.some((tx) => tx.accountId === bank.id) || state.monthlyBills.some((bill) => bill.accountId === bank.id) || state.paymentEvents.some((event) => event.accountId === bank.id) || bank.sourceRecordId) { toast.error("Esta conta possui histórico ou vínculo externo. Oculte-a para preservar a conciliação."); return; }
+    if (
+      state.transactions.some((tx) => tx.accountId === bank.id) ||
+      state.monthlyBills.some((bill) => bill.accountId === bank.id) ||
+      state.paymentEvents.some((event) => event.accountId === bank.id) ||
+      bank.sourceRecordId
+    ) {
+      toast.error(
+        "Esta conta possui histórico ou vínculo externo. Oculte-a para preservar a conciliação.",
+      );
+      return;
+    }
     if (!window.confirm(`Excluir a conta ${bank.name}?`)) return;
-    try { await deleteDoc(doc(db, "users", user.uid, "banks", bank.id)); setBankMenuId(null); toast.success("Conta excluída."); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível excluir a conta."); }
+    try {
+      await deleteDoc(doc(db, "users", user.uid, "banks", bank.id));
+      setBankMenuId(null);
+      toast.success("Conta excluída.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível excluir a conta.");
+    }
   }
 
   function submitCard(e: React.FormEvent) {
@@ -303,7 +419,14 @@ export function CarteiraPage() {
           <PluggySettings />
           <button
             type="button"
-            onClick={() => { setBankEditingId(null); setBankInst(""); setBankName(""); setBankNum(""); setBankBal(""); setBankOpen(true); }}
+            onClick={() => {
+              setBankEditingId(null);
+              setBankInst("");
+              setBankName("");
+              setBankNum("");
+              setBankBal("");
+              setBankOpen(true);
+            }}
             className="inline-flex items-center gap-1.5 rounded-lg border border-[#dce2e6] bg-white px-3 py-2 text-xs font-semibold hover:bg-[#f0f3f5] whitespace-nowrap"
           >
             <Plus className="size-3.5" /> Conta
@@ -322,20 +445,89 @@ export function CarteiraPage() {
         {/* Bank Accounts */}
         <section className="min-w-0 rounded-lg border border-border bg-card p-5">
           <h2 className="text-lg font-semibold text-[#0c1928]">Contas Bancárias</h2>
-          <div className="mt-3 flex justify-end"><button type="button" onClick={() => setShowHiddenBanks((v) => !v)} className="text-xs font-semibold text-[#52616a]">{showHiddenBanks ? "Ocultar contas ocultas" : "Mostrar contas ocultas"}</button></div>
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowHiddenBanks((v) => !v)}
+              className="text-xs font-semibold text-[#52616a]"
+            >
+              {showHiddenBanks ? "Ocultar contas ocultas" : "Mostrar contas ocultas"}
+            </button>
+          </div>
           <div className="mt-3 divide-y divide-[#edf1f3]">
             {state.banks.filter((bank) => showHiddenBanks || !bank.isHidden).length === 0 ? (
               <p className="py-8 text-center text-sm text-[#52616a]">
                 Nenhuma conta cadastrada. Clique em &quot;+ Conta&quot; para adicionar.
               </p>
             ) : (
-              state.banks.filter((bank) => showHiddenBanks || !bank.isHidden).map((b) => (
-                <div key={b.id} className={`flex items-center justify-between gap-2 py-3 ${b.isHidden ? "opacity-50" : ""}`}>
-                  <button type="button" onClick={() => setSelectedBankId(b.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left hover:opacity-80"><BankAvatar institution={b.institution} /><span className="min-w-0"><span className="block truncate text-sm font-semibold text-[#0c1928]">{b.name}</span><span className="block truncate text-xs text-[#52616a]">{b.institution} · •••• {b.number}</span></span></button>
-                  <div className="tabular-nums shrink-0 text-sm font-bold text-[#173d4a]">{formatBRL(b.balanceCents)}</div>
-                  <div className="relative"><button type="button" aria-label={`Ações de ${b.name}`} onClick={() => setBankMenuId((id) => id === b.id ? null : b.id)} className="grid size-8 place-items-center rounded-lg border border-[#dce2e6] text-[#52616a]"><MoreVertical className="size-4" /></button>{bankMenuId === b.id && <div role="menu" className="absolute right-0 z-30 mt-1 w-44 rounded-lg border border-[#dce2e6] bg-white py-1 shadow-lg"><button type="button" role="menuitem" onClick={() => openBankEditor(b)} className="block w-full px-3 py-2 text-left text-xs hover:bg-[#f0f3f5]">Editar conta</button><button type="button" role="menuitem" onClick={() => void toggleBankHidden(b)} className="block w-full px-3 py-2 text-left text-xs hover:bg-[#f0f3f5]">{b.isHidden ? "Mostrar conta" : "Ocultar conta"}</button><button type="button" role="menuitem" onClick={() => void removeBank(b)} className="block w-full px-3 py-2 text-left text-xs text-red-700 hover:bg-red-50">Excluir conta</button></div>}</div>
-                </div>
-              ))
+              state.banks
+                .filter((bank) => showHiddenBanks || !bank.isHidden)
+                .map((b) => (
+                  <div
+                    key={b.id}
+                    className={`flex items-center justify-between gap-2 py-3 ${b.isHidden ? "opacity-50" : ""}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelectedBankId(b.id)}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left hover:opacity-80"
+                    >
+                      <BankAvatar institution={b.institution} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-[#0c1928]">
+                          {b.name}
+                        </span>
+                        <span className="block truncate text-xs text-[#52616a]">
+                          {b.institution} · •••• {b.number}
+                        </span>
+                      </span>
+                    </button>
+                    <div className="tabular-nums shrink-0 text-sm font-bold text-[#173d4a]">
+                      {formatBRL(b.balanceCents)}
+                    </div>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        aria-label={`Ações de ${b.name}`}
+                        onClick={() => setBankMenuId((id) => (id === b.id ? null : b.id))}
+                        className="grid size-8 place-items-center rounded-lg border border-[#dce2e6] text-[#52616a]"
+                      >
+                        <MoreVertical className="size-4" />
+                      </button>
+                      {bankMenuId === b.id && (
+                        <div
+                          role="menu"
+                          className="absolute right-0 z-30 mt-1 w-44 rounded-lg border border-[#dce2e6] bg-white py-1 shadow-lg"
+                        >
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => openBankEditor(b)}
+                            className="block w-full px-3 py-2 text-left text-xs hover:bg-[#f0f3f5]"
+                          >
+                            Editar conta
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => void toggleBankHidden(b)}
+                            className="block w-full px-3 py-2 text-left text-xs hover:bg-[#f0f3f5]"
+                          >
+                            {b.isHidden ? "Mostrar conta" : "Ocultar conta"}
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => void removeBank(b)}
+                            className="block w-full px-3 py-2 text-left text-xs text-red-700 hover:bg-red-50"
+                          >
+                            Excluir conta
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
             )}
           </div>
         </section>
@@ -360,7 +552,11 @@ export function CarteiraPage() {
                   <ChevronLeft className="size-4" />
                 </button>
 
-                <button type="button" onClick={() => setShowCardDetails(true)} aria-label={`Abrir detalhes do cartão ${activeCard.name}`} className="relative min-w-0 flex-1 overflow-hidden rounded-lg p-3 text-left text-brand-ice shadow-md"
+                <button
+                  type="button"
+                  onClick={() => setShowCardDetails(true)}
+                  aria-label={`Abrir detalhes do cartão ${activeCard.name}`}
+                  className="relative min-w-0 flex-1 overflow-hidden rounded-lg p-3 text-left text-brand-ice shadow-md"
                   style={{ background: getCardDesign(activeCard).gradient }}
                 >
                   <div className="flex items-start justify-between">
@@ -440,7 +636,9 @@ export function CarteiraPage() {
         <section className="min-w-0 rounded-lg border border-border bg-card p-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-[#0c1928]">Movimentações</h2>
-            <span className="text-[11px] text-[#52616a]">Entradas e saídas em uma única linha do tempo</span>
+            <span className="text-[11px] text-[#52616a]">
+              Entradas e saídas em uma única linha do tempo
+            </span>
           </div>
 
           <div className="mb-3 flex items-center gap-2">
@@ -482,7 +680,12 @@ export function CarteiraPage() {
               filteredTx.map((t) => {
                 const income = t.accountType === "CREDIT" ? t.amountCents < 0 : t.amountCents >= 0;
                 return (
-                  <button type="button" key={t.id} onClick={() => setSelectedTransaction(t)} className="flex w-full items-start justify-between gap-3 py-2.5 text-left text-sm hover:bg-[#f7f8fa]">
+                  <button
+                    type="button"
+                    key={t.id}
+                    onClick={() => setSelectedTransaction(t)}
+                    className="flex w-full items-start justify-between gap-3 py-2.5 text-left text-sm hover:bg-[#f7f8fa]"
+                  >
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-semibold text-[#0c1928]">{t.description}</div>
                       <div className="text-xs text-[#52616a]">
@@ -516,7 +719,9 @@ export function CarteiraPage() {
               </h2>
             </div>
             <p className="mt-1 text-xs text-[#52616a]">
-              Capturas históricas organizadas por ano e mês. Abra cada lançamento para conferir os detalhes; editar ou excluir um retrato não altera o limite atual do cartão nem quita faturas.
+              Capturas históricas organizadas por ano e mês. Abra cada lançamento para conferir os
+              detalhes; editar ou excluir um retrato não altera o limite atual do cartão nem quita
+              faturas.
             </p>
           </div>
           <span className="rounded-full bg-[#f0f3f5] px-2.5 py-1 text-xs font-semibold text-[#173d4a]">
@@ -543,7 +748,12 @@ export function CarteiraPage() {
                   key={snap.id}
                   className="rounded-xl border border-[#dce2e6] bg-[#fafbfc] p-4 transition-colors"
                 >
-                  {(index === 0 || sortedSnapshots[index - 1]?.period.slice(0, 4) !== snap.period.slice(0, 4)) && <div className="mb-3 border-b border-[#dce2e6] pb-2 text-xs font-bold uppercase tracking-wider text-[#173d4a]">Ano {snap.period.slice(0, 4)}</div>}
+                  {(index === 0 ||
+                    sortedSnapshots[index - 1]?.period.slice(0, 4) !== snap.period.slice(0, 4)) && (
+                    <div className="mb-3 border-b border-[#dce2e6] pb-2 text-xs font-bold uppercase tracking-wider text-[#173d4a]">
+                      Ano {snap.period.slice(0, 4)}
+                    </div>
+                  )}
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -565,30 +775,61 @@ export function CarteiraPage() {
                         )}
                         {snap.dueDate && <span>Vencimento: {formatDateBR(snap.dueDate)}</span>}
                         {isUnlinked && snap.accountId && (
-                          <span className="font-mono text-[11px]">
-                            ID origem: {snap.accountId}
-                          </span>
+                          <span className="font-mono text-[11px]">ID origem: {snap.accountId}</span>
                         )}
                       </div>
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2">
                       <div className="relative">
-                        <button type="button" onClick={() => setSnapshotMenuId((id) => id === snap.id ? null : snap.id)}
-                          aria-label={"Ações do retrato " + snap.period + " — " + cardTitle} aria-haspopup="menu"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSnapshotMenuId((id) => (id === snap.id ? null : snap.id))
+                          }
+                          aria-label={"Ações do retrato " + snap.period + " — " + cardTitle}
+                          aria-haspopup="menu"
                           aria-expanded={snapshotMenuId === snap.id}
-                          className="grid size-9 place-items-center rounded-lg border border-[#dce2e6] bg-white text-[#52616a] hover:bg-[#f0f3f5]">
+                          className="grid size-9 place-items-center rounded-lg border border-[#dce2e6] bg-white text-[#52616a] hover:bg-[#f0f3f5]"
+                        >
                           <MoreVertical className="size-4" />
                         </button>
-                        {snapshotMenuId === snap.id && <div role="menu" className="absolute right-0 z-30 mt-1 w-44 overflow-hidden rounded-lg border border-[#dce2e6] bg-white py-1 shadow-lg">
-                          <button type="button" role="menuitem" onClick={() => openSnapshotEditor(snap)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[#0c1928] hover:bg-[#f0f3f5]"><Pencil className="size-3.5" /> Alterar retrato</button>
-                          <button type="button" role="menuitem" onClick={() => void deleteSnapshot(snap)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-red-700 hover:bg-red-50"><Trash2 className="size-3.5" /> Excluir retrato</button>
-                        </div>}
+                        {snapshotMenuId === snap.id && (
+                          <div
+                            role="menu"
+                            className="absolute right-0 z-30 mt-1 w-44 overflow-hidden rounded-lg border border-[#dce2e6] bg-white py-1 shadow-lg"
+                          >
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => openSnapshotEditor(snap)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[#0c1928] hover:bg-[#f0f3f5]"
+                            >
+                              <Pencil className="size-3.5" /> Alterar retrato
+                            </button>
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => void deleteSnapshot(snap)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="size-3.5" /> Excluir retrato
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <button type="button" onClick={() => toggleSnapshot(snap.id)} aria-expanded={expanded}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#dce2e6] bg-white px-3 py-1.5 text-xs font-semibold text-[#173d4a] hover:bg-[#f0f3f5]">
+                      <button
+                        type="button"
+                        onClick={() => toggleSnapshot(snap.id)}
+                        aria-expanded={expanded}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#dce2e6] bg-white px-3 py-1.5 text-xs font-semibold text-[#173d4a] hover:bg-[#f0f3f5]"
+                      >
                         {snap.transactions.length} lançamento(s)
-                        {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                        {expanded ? (
+                          <ChevronUp className="size-3.5" />
+                        ) : (
+                          <ChevronDown className="size-3.5" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -634,7 +875,11 @@ export function CarteiraPage() {
                             const amountCents = Math.round(tx.amount * 100);
                             const isCredit = amountCents < 0;
                             return (
-                              <button type="button" key={tx.id} onClick={() => setSelectedSnapshotTransaction(tx)} className="flex w-full items-center justify-between gap-3 py-2 text-left text-xs hover:bg-[#f7f8fa]"
+                              <button
+                                type="button"
+                                key={tx.id}
+                                onClick={() => setSelectedSnapshotTransaction(tx)}
+                                className="flex w-full items-center justify-between gap-3 py-2 text-left text-xs hover:bg-[#f7f8fa]"
                               >
                                 <div className="min-w-0 flex-1">
                                   <div className="truncate font-medium text-[#0c1928]">
@@ -667,30 +912,451 @@ export function CarteiraPage() {
         )}
       </section>
 
+      {selectedBankId &&
+        (() => {
+          const bank = state.banks.find((item) => item.id === selectedBankId);
+          if (!bank) return null;
+          const rows = state.transactions.filter(
+            (tx) => tx.accountId === bank.id || tx.accountId === bank.sourceRecordId,
+          );
+          return (
+            <div
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0c1928]/70 p-4"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setSelectedBankId(null);
+              }}
+            >
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Movimentações de ${bank.name}`}
+                className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"
+              >
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      {bank.institution} · {bank.name}
+                    </h3>
+                    <p className="text-xs text-slate-300">
+                      Saldo informado: {formatBRL(bank.balanceCents)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBankId(null)}
+                    aria-label="Fechar"
+                    className="rounded-lg p-2 hover:bg-white/10"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+                {rows.length ? (
+                  <div className="divide-y divide-white/10">
+                    {rows.map((tx) => (
+                      <div key={tx.id} className="flex justify-between gap-3 py-3 text-sm">
+                        <div>
+                          <div className="font-medium">{tx.description}</div>
+                          <div className="text-xs text-slate-300">
+                            {formatDateBR(tx.date)} · {tx.category}
+                          </div>
+                        </div>
+                        <strong
+                          className={tx.amountCents >= 0 ? "text-emerald-400" : "text-red-400"}
+                        >
+                          {formatBRL(tx.amountCents)}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="py-10 text-center text-sm text-slate-300">
+                    Nenhuma movimentação encontrada para esta conta.
+                  </p>
+                )}
+              </section>
+            </div>
+          );
+        })()}
 
-      {selectedBankId && (() => { const bank = state.banks.find((item) => item.id === selectedBankId); if (!bank) return null; const rows = state.transactions.filter((tx) => tx.accountId === bank.id || tx.accountId === bank.sourceRecordId); return <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0c1928]/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setSelectedBankId(null); }}><section role="dialog" aria-modal="true" aria-label={`Movimentações de ${bank.name}`} className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"><div className="mb-4 flex items-center justify-between gap-3"><div><h3 className="text-lg font-semibold">{bank.institution} · {bank.name}</h3><p className="text-xs text-slate-300">Saldo informado: {formatBRL(bank.balanceCents)}</p></div><button type="button" onClick={() => setSelectedBankId(null)} aria-label="Fechar" className="rounded-lg p-2 hover:bg-white/10"><X className="size-4" /></button></div>{rows.length ? <div className="divide-y divide-white/10">{rows.map((tx) => <div key={tx.id} className="flex justify-between gap-3 py-3 text-sm"><div><div className="font-medium">{tx.description}</div><div className="text-xs text-slate-300">{formatDateBR(tx.date)} · {tx.category}</div></div><strong className={tx.amountCents >= 0 ? "text-emerald-400" : "text-red-400"}>{formatBRL(tx.amountCents)}</strong></div>)}</div> : <p className="py-10 text-center text-sm text-slate-300">Nenhuma movimentação encontrada para esta conta.</p>}</section></div>; })()}
+      {showCardDetails && activeCard && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0c1928]/70 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setShowCardDetails(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Faturas e movimentações de ${activeCard.name}`}
+            className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">
+                  {activeCard.institution} · {activeCard.name}
+                </h3>
+                <p className="text-xs text-slate-300">
+                  Faturas históricas e movimentações sincronizadas
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCardDetails(false)}
+                aria-label="Fechar"
+                className="rounded-lg p-2 hover:bg-white/10"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <h4 className="mb-2 text-sm font-semibold">Faturas anteriores e atuais</h4>
+            {sortedSnapshots.filter(
+              (snap) =>
+                snap.accountId === activeCard.id || snap.accountId === activeCard.sourceRecordId,
+            ).length ? (
+              <div className="space-y-2">
+                {sortedSnapshots
+                  .filter(
+                    (snap) =>
+                      snap.accountId === activeCard.id ||
+                      snap.accountId === activeCard.sourceRecordId,
+                  )
+                  .map((snap) => (
+                    <div key={snap.id} className="rounded-lg border border-white/10 p-3">
+                      <div className="flex justify-between gap-3">
+                        <strong>{snap.period}</strong>
+                        <strong>
+                          {snap.invoiceCents === null ? "—" : formatBRL(snap.invoiceCents)}
+                        </strong>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-300">
+                        Fechamento {snap.closingDate ? formatDateBR(snap.closingDate) : "—"} ·
+                        Vencimento {snap.dueDate ? formatDateBR(snap.dueDate) : "—"}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-white/10 p-4 text-sm text-slate-300">
+                Nenhuma fatura histórica sincronizada para este cartão.
+              </p>
+            )}
+            <h4 className="mb-2 mt-5 text-sm font-semibold">
+              Provisões futuras e parcelas pendentes
+            </h4>
+            {state.monthlyBills
+              .filter(
+                (bill) =>
+                  (bill.cardId === activeCard.id || bill.cardId === activeCard.sourceRecordId) &&
+                  bill.period >= new Date().toISOString().slice(0, 7) &&
+                  !bill.isSettled,
+              )
+              .sort((a, b) => a.period.localeCompare(b.period)).length ? (
+              <div className="space-y-1">
+                {state.monthlyBills
+                  .filter(
+                    (bill) =>
+                      (bill.cardId === activeCard.id ||
+                        bill.cardId === activeCard.sourceRecordId) &&
+                      bill.period >= new Date().toISOString().slice(0, 7) &&
+                      !bill.isSettled,
+                  )
+                  .sort((a, b) => a.period.localeCompare(b.period))
+                  .map((bill) => (
+                    <div
+                      key={bill.id}
+                      className="flex justify-between gap-3 border-t border-white/10 py-2 text-sm"
+                    >
+                      <span>
+                        {bill.creditor}
+                        <small className="block text-xs text-slate-300">
+                          {formatDateBR(bill.dueDate)}
+                          {bill.installmentNumber ? ` · Parcela ${bill.installmentNumber}` : ""}
+                        </small>
+                      </span>
+                      <strong>{formatBRL(bill.expectedCents)}</strong>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-white/20 p-4 text-sm text-slate-300">
+                Nenhuma provisão futura foi sincronizada para este cartão. Quando a Pluggy fornecer
+                os metadados de parcelamento, as parcelas serão registradas nas despesas anuais e
+                mensais.
+              </p>
+            )}
+            <h4 className="mb-2 mt-5 text-sm font-semibold">Movimentações do cartão</h4>
+            {groupCardPurchaseTransactions(
+              state.transactions.filter(
+                (tx) =>
+                  tx.accountId === activeCard.id || tx.accountId === activeCard.sourceRecordId,
+              ),
+            ).map((tx) => (
+              <div
+                key={tx.id}
+                className="flex justify-between gap-3 border-t border-white/10 py-2 text-sm"
+              >
+                <span>
+                  {tx.description}
+                  <small className="block text-xs text-slate-300">{formatDateBR(tx.date)}</small>
+                </span>
+                <strong>{formatBRL(tx.amountCents)}</strong>
+              </div>
+            ))}
+          </section>
+        </div>
+      )}
 
-      {showCardDetails && activeCard && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0c1928]/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowCardDetails(false); }}><section role="dialog" aria-modal="true" aria-label={`Faturas e movimentações de ${activeCard.name}`} className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"><div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-semibold">{activeCard.institution} · {activeCard.name}</h3><p className="text-xs text-slate-300">Faturas históricas e movimentações sincronizadas</p></div><button type="button" onClick={() => setShowCardDetails(false)} aria-label="Fechar" className="rounded-lg p-2 hover:bg-white/10"><X className="size-4" /></button></div><h4 className="mb-2 text-sm font-semibold">Faturas anteriores e atuais</h4>{sortedSnapshots.filter((snap) => snap.accountId === activeCard.id || snap.accountId === activeCard.sourceRecordId).length ? <div className="space-y-2">{sortedSnapshots.filter((snap) => snap.accountId === activeCard.id || snap.accountId === activeCard.sourceRecordId).map((snap) => <div key={snap.id} className="rounded-lg border border-white/10 p-3"><div className="flex justify-between gap-3"><strong>{snap.period}</strong><strong>{snap.invoiceCents === null ? "—" : formatBRL(snap.invoiceCents)}</strong></div><p className="mt-1 text-xs text-slate-300">Fechamento {snap.closingDate ? formatDateBR(snap.closingDate) : "—"} · Vencimento {snap.dueDate ? formatDateBR(snap.dueDate) : "—"}</p></div>)}</div> : <p className="rounded-lg border border-white/10 p-4 text-sm text-slate-300">Nenhuma fatura histórica sincronizada para este cartão.</p>}<h4 className="mb-2 mt-5 text-sm font-semibold">Provisões futuras e parcelas pendentes</h4>{state.monthlyBills.filter((bill) => (bill.cardId === activeCard.id || bill.cardId === activeCard.sourceRecordId) && bill.period >= new Date().toISOString().slice(0, 7) && !bill.isSettled).sort((a, b) => a.period.localeCompare(b.period)).length ? <div className="space-y-1">{state.monthlyBills.filter((bill) => (bill.cardId === activeCard.id || bill.cardId === activeCard.sourceRecordId) && bill.period >= new Date().toISOString().slice(0, 7) && !bill.isSettled).sort((a, b) => a.period.localeCompare(b.period)).map((bill) => <div key={bill.id} className="flex justify-between gap-3 border-t border-white/10 py-2 text-sm"><span>{bill.creditor}<small className="block text-xs text-slate-300">{formatDateBR(bill.dueDate)}{bill.installmentNumber ? ` · Parcela ${bill.installmentNumber}` : ""}</small></span><strong>{formatBRL(bill.expectedCents)}</strong></div>)}</div> : <p className="rounded-lg border border-dashed border-white/20 p-4 text-sm text-slate-300">Nenhuma provisão futura foi sincronizada para este cartão. Quando a Pluggy fornecer os metadados de parcelamento, as parcelas serão registradas nas despesas anuais e mensais.</p>}<h4 className="mb-2 mt-5 text-sm font-semibold">Movimentações do cartão</h4>{groupCardPurchaseTransactions(state.transactions.filter((tx) => tx.accountId === activeCard.id || tx.accountId === activeCard.sourceRecordId)).map((tx) => <div key={tx.id} className="flex justify-between gap-3 border-t border-white/10 py-2 text-sm"><span>{tx.description}<small className="block text-xs text-slate-300">{formatDateBR(tx.date)}</small></span><strong>{formatBRL(tx.amountCents)}</strong></div>)}</section></div>}
+      {selectedTransaction && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0c1928]/70 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setSelectedTransaction(null);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label="Detalhes da movimentação"
+            className="w-full max-w-lg rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"
+          >
+            <div className="mb-4 flex justify-between">
+              <h3 className="text-lg font-semibold">Detalhes da movimentação</h3>
+              <button
+                type="button"
+                onClick={() => setSelectedTransaction(null)}
+                aria-label="Fechar"
+                className="rounded-lg p-2 hover:bg-white/10"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <p className="font-semibold">{selectedTransaction.description}</p>
+            <p className="mt-1 text-xs text-slate-300">
+              {formatDateBR(selectedTransaction.date)} · {selectedTransaction.category}
+            </p>
+            <p className="mt-4 text-2xl font-bold">{formatBRL(selectedTransaction.amountCents)}</p>
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <dt className="text-slate-400">Conta registrada</dt>
+                <dd>
+                  {selectedTransaction.institution} · {selectedTransaction.accountName}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-400">Natureza</dt>
+                <dd>
+                  {selectedTransaction.accountType === "CREDIT"
+                    ? selectedTransaction.amountCents < 0
+                      ? "Crédito / pagamento recebido no cartão"
+                      : "Compra / débito no cartão"
+                    : selectedTransaction.amountCents >= 0
+                      ? "Entrada na conta"
+                      : "Saída da conta"}
+                </dd>
+              </div>
+              {selectedCounterpart && (
+                <>
+                  <div>
+                    <dt className="text-slate-400">Origem</dt>
+                    <dd>
+                      {
+                        (selectedTransaction.accountType === "BANK"
+                          ? selectedTransaction
+                          : selectedCounterpart
+                        ).institution
+                      }{" "}
+                      ·{" "}
+                      {
+                        (selectedTransaction.accountType === "BANK"
+                          ? selectedTransaction
+                          : selectedCounterpart
+                        ).accountName
+                      }
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-400">Destino</dt>
+                    <dd>
+                      {
+                        (selectedTransaction.accountType === "CREDIT"
+                          ? selectedTransaction
+                          : selectedCounterpart
+                        ).institution
+                      }{" "}
+                      ·{" "}
+                      {
+                        (selectedTransaction.accountType === "CREDIT"
+                          ? selectedTransaction
+                          : selectedCounterpart
+                        ).accountName
+                      }
+                    </dd>
+                  </div>
+                </>
+              )}
+              <div>
+                <dt className="text-slate-400">Identificação</dt>
+                <dd>{selectedTransaction.reconciledEventId || "Movimentação importada"}</dd>
+              </div>
+            </dl>
+          </section>
+        </div>
+      )}
 
-      {selectedTransaction && <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0c1928]/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setSelectedTransaction(null); }}><section role="dialog" aria-modal="true" aria-label="Detalhes da movimentação" className="w-full max-w-lg rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"><div className="mb-4 flex justify-between"><h3 className="text-lg font-semibold">Detalhes da movimentação</h3><button type="button" onClick={() => setSelectedTransaction(null)} aria-label="Fechar" className="rounded-lg p-2 hover:bg-white/10"><X className="size-4" /></button></div><p className="font-semibold">{selectedTransaction.description}</p><p className="mt-1 text-xs text-slate-300">{formatDateBR(selectedTransaction.date)} · {selectedTransaction.category}</p><p className="mt-4 text-2xl font-bold">{formatBRL(selectedTransaction.amountCents)}</p><dl className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><dt className="text-slate-400">Conta registrada</dt><dd>{selectedTransaction.institution} · {selectedTransaction.accountName}</dd></div><div><dt className="text-slate-400">Natureza</dt><dd>{selectedTransaction.accountType === "CREDIT" ? (selectedTransaction.amountCents < 0 ? "Crédito / pagamento recebido no cartão" : "Compra / débito no cartão") : (selectedTransaction.amountCents >= 0 ? "Entrada na conta" : "Saída da conta")}</dd></div>{selectedCounterpart && <><div><dt className="text-slate-400">Origem</dt><dd>{(selectedTransaction.accountType === "BANK" ? selectedTransaction : selectedCounterpart).institution} · {(selectedTransaction.accountType === "BANK" ? selectedTransaction : selectedCounterpart).accountName}</dd></div><div><dt className="text-slate-400">Destino</dt><dd>{(selectedTransaction.accountType === "CREDIT" ? selectedTransaction : selectedCounterpart).institution} · {(selectedTransaction.accountType === "CREDIT" ? selectedTransaction : selectedCounterpart).accountName}</dd></div></>}<div><dt className="text-slate-400">Identificação</dt><dd>{selectedTransaction.reconciledEventId || "Movimentação importada"}</dd></div></dl></section></div>}
-
-      {selectedSnapshotTransaction && <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0c1928]/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setSelectedSnapshotTransaction(null); }}><section role="dialog" aria-modal="true" aria-label="Detalhes do lançamento do retrato" className="w-full max-w-lg rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"><div className="mb-4 flex justify-between"><h3 className="text-lg font-semibold">Lançamento do retrato</h3><button type="button" onClick={() => setSelectedSnapshotTransaction(null)} aria-label="Fechar" className="rounded-lg p-2 hover:bg-white/10"><X className="size-4" /></button></div><p className="font-semibold">{selectedSnapshotTransaction.description}</p><p className="mt-1 text-xs text-slate-300">{selectedSnapshotTransaction.date ? formatDateBR(selectedSnapshotTransaction.date) : "Data não informada"} · {selectedSnapshotTransaction.category || "Sem categoria"}</p><p className="mt-4 text-2xl font-bold">{formatBRL(Math.round(selectedSnapshotTransaction.amount * 100))}</p></section></div>}
+      {selectedSnapshotTransaction && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0c1928]/70 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setSelectedSnapshotTransaction(null);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label="Detalhes do lançamento do retrato"
+            className="w-full max-w-lg rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"
+          >
+            <div className="mb-4 flex justify-between">
+              <h3 className="text-lg font-semibold">Lançamento do retrato</h3>
+              <button
+                type="button"
+                onClick={() => setSelectedSnapshotTransaction(null)}
+                aria-label="Fechar"
+                className="rounded-lg p-2 hover:bg-white/10"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <p className="font-semibold">{selectedSnapshotTransaction.description}</p>
+            <p className="mt-1 text-xs text-slate-300">
+              {selectedSnapshotTransaction.date
+                ? formatDateBR(selectedSnapshotTransaction.date)
+                : "Data não informada"}{" "}
+              · {selectedSnapshotTransaction.category || "Sem categoria"}
+            </p>
+            <p className="mt-4 text-2xl font-bold">
+              {formatBRL(Math.round(selectedSnapshotTransaction.amount * 100))}
+            </p>
+          </section>
+        </div>
+      )}
 
       {editingSnapshot && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0c1928]/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditingSnapshot(null); }}>
-          <div role="dialog" aria-modal="true" aria-labelledby="snapshot-edit-title" className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl">
-            <div className="mb-4 flex items-center justify-between gap-3"><h3 id="snapshot-edit-title" className="text-base font-semibold">Alterar retrato mensal</h3>
-              <button type="button" aria-label="Fechar edição" onClick={() => setEditingSnapshot(null)} className="grid size-8 place-items-center rounded-lg text-slate-300 hover:bg-white/10"><X className="size-4" /></button></div>
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0c1928]/70 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setEditingSnapshot(null);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="snapshot-edit-title"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 id="snapshot-edit-title" className="text-base font-semibold">
+                Alterar retrato mensal
+              </h3>
+              <button
+                type="button"
+                aria-label="Fechar edição"
+                onClick={() => setEditingSnapshot(null)}
+                className="grid size-8 place-items-center rounded-lg text-slate-300 hover:bg-white/10"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
             <form onSubmit={saveSnapshotEdit} className="grid gap-3 sm:grid-cols-2">
-              <label className="text-xs text-slate-300">Cartão vinculado<select value={snapshotForm.accountId} onChange={(e) => setSnapshotForm((p) => ({ ...p, accountId: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white">
-                <option value="">Manter sem vínculo</option>{state.cards.map((card) => <option key={card.id} value={card.id}>{card.institution} · {card.name}</option>)}</select></label>
-              <label className="text-xs text-slate-300">Competência<input type="month" required value={snapshotForm.period} onChange={(e) => setSnapshotForm((p) => ({ ...p, period: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white" /></label>
-              <label className="text-xs text-slate-300">Data e hora da captura<input type="datetime-local" required value={snapshotForm.capturedAt} onChange={(e) => setSnapshotForm((p) => ({ ...p, capturedAt: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white" /></label>
-              <label className="text-xs text-slate-300">Data de fechamento<input type="date" value={snapshotForm.closingDate} onChange={(e) => setSnapshotForm((p) => ({ ...p, closingDate: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white" /></label>
-              <label className="text-xs text-slate-300">Data de vencimento<input type="date" value={snapshotForm.dueDate} onChange={(e) => setSnapshotForm((p) => ({ ...p, dueDate: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white" /></label>
-              {([["invoice","Fatura na captura (R$)"],["totalLimit","Limite total na época (R$)"],["usedLimit","Utilizado na época (R$)"],["availableLimit","Disponível na época (R$)"]] as const).map(([key,label]) => <label key={key} className="text-xs text-slate-300">{label}<input inputMode="decimal" placeholder="0,00" value={snapshotForm[key]} onChange={(e) => setSnapshotForm((p) => ({ ...p, [key]: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white" /></label>)}
-              <div className="flex justify-end gap-2 pt-2 sm:col-span-2"><button type="button" onClick={() => setEditingSnapshot(null)} className="h-9 rounded-lg border border-slate-600 px-4 text-xs font-semibold text-slate-200">Cancelar</button>
-                <button type="submit" disabled={savingSnapshot} className="h-9 rounded-lg bg-cyan-700 px-4 text-xs font-semibold text-white disabled:opacity-50">{savingSnapshot ? "Salvando..." : "Salvar alterações"}</button></div>
+              <label className="text-xs text-slate-300">
+                Cartão vinculado
+                <select
+                  value={snapshotForm.accountId}
+                  onChange={(e) => setSnapshotForm((p) => ({ ...p, accountId: e.target.value }))}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white"
+                >
+                  <option value="">Manter sem vínculo</option>
+                  {state.cards.map((card) => (
+                    <option key={card.id} value={card.id}>
+                      {card.institution} · {card.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs text-slate-300">
+                Competência
+                <input
+                  type="month"
+                  required
+                  value={snapshotForm.period}
+                  onChange={(e) => setSnapshotForm((p) => ({ ...p, period: e.target.value }))}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white"
+                />
+              </label>
+              <label className="text-xs text-slate-300">
+                Data e hora da captura
+                <input
+                  type="datetime-local"
+                  required
+                  value={snapshotForm.capturedAt}
+                  onChange={(e) => setSnapshotForm((p) => ({ ...p, capturedAt: e.target.value }))}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white"
+                />
+              </label>
+              <label className="text-xs text-slate-300">
+                Data de fechamento
+                <input
+                  type="date"
+                  value={snapshotForm.closingDate}
+                  onChange={(e) => setSnapshotForm((p) => ({ ...p, closingDate: e.target.value }))}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white"
+                />
+              </label>
+              <label className="text-xs text-slate-300">
+                Data de vencimento
+                <input
+                  type="date"
+                  value={snapshotForm.dueDate}
+                  onChange={(e) => setSnapshotForm((p) => ({ ...p, dueDate: e.target.value }))}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white"
+                />
+              </label>
+              {(
+                [
+                  ["invoice", "Fatura na captura (R$)"],
+                  ["totalLimit", "Limite total na época (R$)"],
+                  ["usedLimit", "Utilizado na época (R$)"],
+                  ["availableLimit", "Disponível na época (R$)"],
+                ] as const
+              ).map(([key, label]) => (
+                <label key={key} className="text-xs text-slate-300">
+                  {label}
+                  <input
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={snapshotForm[key]}
+                    onChange={(e) => setSnapshotForm((p) => ({ ...p, [key]: e.target.value }))}
+                    className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white"
+                  />
+                </label>
+              ))}
+              <div className="flex justify-end gap-2 pt-2 sm:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingSnapshot(null)}
+                  className="h-9 rounded-lg border border-slate-600 px-4 text-xs font-semibold text-slate-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingSnapshot}
+                  className="h-9 rounded-lg bg-cyan-700 px-4 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {savingSnapshot ? "Salvando..." : "Salvar alterações"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -700,7 +1366,9 @@ export function CarteiraPage() {
       {bankOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0c1928]/60 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-[#0c1928]">{bankEditingId ? "Editar Conta Bancária" : "Nova Conta Bancária"}</h3>
+            <h3 className="text-lg font-semibold text-[#0c1928]">
+              {bankEditingId ? "Editar Conta Bancária" : "Nova Conta Bancária"}
+            </h3>
             <form onSubmit={submitBank} className="mt-4 space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-[#52616a]">Instituição</label>
@@ -713,7 +1381,9 @@ export function CarteiraPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-[#52616a]">Nome da conta</label>
+                <label className="mb-1 block text-xs font-medium text-[#52616a]">
+                  Nome da conta
+                </label>
                 <input
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
@@ -734,7 +1404,9 @@ export function CarteiraPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#52616a]">Saldo inicial (R$)</label>
+                  <label className="mb-1 block text-xs font-medium text-[#52616a]">
+                    Saldo inicial (R$)
+                  </label>
                   <input
                     value={bankBal}
                     onChange={(e) => setBankBal(e.target.value)}
@@ -746,7 +1418,10 @@ export function CarteiraPage() {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setBankOpen(false); setBankEditingId(null); }}
+                  onClick={() => {
+                    setBankOpen(false);
+                    setBankEditingId(null);
+                  }}
                   className="h-9 rounded-lg border border-[#dce2e6] px-4 text-xs font-semibold"
                 >
                   Cancelar
@@ -771,7 +1446,9 @@ export function CarteiraPage() {
             <form onSubmit={submitCard} className="mt-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#52616a]">Instituição</label>
+                  <label className="mb-1 block text-xs font-medium text-[#52616a]">
+                    Instituição
+                  </label>
                   <input
                     value={cardInst}
                     onChange={(e) => setCardInst(e.target.value)}
@@ -796,7 +1473,9 @@ export function CarteiraPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-[#52616a]">Apelido do cartão</label>
+                <label className="mb-1 block text-xs font-medium text-[#52616a]">
+                  Apelido do cartão
+                </label>
                 <input
                   value={cardName}
                   onChange={(e) => setCardName(e.target.value)}
@@ -807,7 +1486,9 @@ export function CarteiraPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#52616a]">Final (4 dígitos)</label>
+                  <label className="mb-1 block text-xs font-medium text-[#52616a]">
+                    Final (4 dígitos)
+                  </label>
                   <input
                     value={cardNum}
                     onChange={(e) => setCardNum(e.target.value)}
@@ -817,7 +1498,9 @@ export function CarteiraPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#52616a]">Limite (R$)</label>
+                  <label className="mb-1 block text-xs font-medium text-[#52616a]">
+                    Limite (R$)
+                  </label>
                   <input
                     value={cardLimit}
                     onChange={(e) => setCardLimit(e.target.value)}
