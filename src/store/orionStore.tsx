@@ -93,6 +93,7 @@ import {
 import { derivedContractStatus } from "@/lib/domain/contracts";
 import { resolveActivePaymentEvents, resolveActiveRevenueEvents, validIsoDate } from "@/lib/domain/ledgerHistory";
 import { clampDueDate, todayBR } from "@/lib/domain/money";
+import { GENERIC_PAYMENT_DATE, planGenericPaymentDateRepair } from "@/lib/domain/paymentDateRepair";
 
 function uid(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -3357,6 +3358,57 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const repairGenericPaymentDates: OrionContextValue["repairGenericPaymentDates"] = async () => {
+    const ownerId = requireUid();
+    const lock = "repair-generic-payment-dates";
+    if (inFlightKeysRef.current.has(lock)) throw new Error("Correção já em andamento.");
+    inFlightKeysRef.current.add(lock);
+    let corrected = 0;
+    try {
+      for (const repair of planGenericPaymentDateRepair(state)) {
+        await runTransaction(db, async (tx) => {
+          const target = doc(db, "users", ownerId, repair.collection, repair.id);
+          const snap = await tx.get(target);
+          if (!snap.exists()) return;
+          const before = snap.data();
+          const changes: DocumentData = {};
+          if (repair.collection === "annualExpenses") {
+            const months = { ...((before["months"] as Record<string, AnnualCellState>) ?? {}) };
+            let changed = false;
+            for (const [month, date] of Object.entries(repair.dates)) {
+              const cell = months[month];
+              if (cell?.paidDate !== GENERIC_PAYMENT_DATE) continue;
+              months[month] = { ...cell, paidDate: date };
+              changed = true;
+            }
+            if (!changed) return;
+            changes["months"] = months;
+          } else {
+            if (before["paidDate"] !== GENERIC_PAYMENT_DATE) return;
+            changes["paidDate"] = repair.dates["paidDate"];
+            if (repair.collection === "paymentEvents" && before["afterData"]) {
+              changes["afterData"] = { ...(before["afterData"] as DocumentData), paidDate: repair.dates["paidDate"] };
+            }
+          }
+          // Archive first: the compatibility adapter commits sequentially, so an interruption
+          // cannot change a record without preserving its original snapshot.
+          tx.set(doc(db, "users", ownerId, "paymentDateRepairs", `${repair.collection}_${repair.id}_2026-11-15`), {
+            reason: "Correção da data genérica de 15/11/2026 pelo vencimento da competência",
+            sourcePath: target.path,
+            beforeData: before,
+            afterChanges: changes,
+            correctedAt: new Date().toISOString(),
+          });
+          tx.update(target, { ...changes, updatedAt: serverTimestamp() });
+          corrected++;
+        });
+      }
+      return corrected;
+    } finally {
+      inFlightKeysRef.current.delete(lock);
+    }
+  };
+
   const correctPaymentEvent: OrionContextValue["correctPaymentEvent"] = async (input) => {
     const ownerId = requireUid();
     const idemKey = input.idempotencyKey;
@@ -5842,6 +5894,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         payMonthlyBill,
         payPayableInstallment,
         correctPaymentEvent,
+        repairGenericPaymentDates,
         reversePaymentEvent,
         addMonthlyBill,
         uploadHistoryAttachment,

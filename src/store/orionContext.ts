@@ -198,6 +198,7 @@ export interface OrionContextValue {
     options?: PaymentSettlementOptions,
   ) => Promise<void>;
   correctPaymentEvent: (input: CorrectPaymentInput) => Promise<void>;
+  repairGenericPaymentDates: () => Promise<number>;
   reversePaymentEvent: (input: ReversePaymentInput) => Promise<void>;
   addMonthlyBill: (bill: Omit<MonthlyBill, "id" | "paidDate" | "paidCents" | "isSettled">) => Promise<void>;
   uploadHistoryAttachment: (file: File, linkRefId: string) => Promise<PaymentAttachmentRef>;

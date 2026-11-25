@@ -8,6 +8,7 @@ import { HistoryCorrectionModal } from "@/components/finance/HistoryCorrectionMo
 import { useOrion } from "@/store/orionContext";
 import {
   autoNote,
+  clampDueDate,
   expensePaymentAdjustment,
   formatBRL,
   formatDateBR,
@@ -18,6 +19,7 @@ import { EXPENSE_CATEGORIES } from "@/lib/domain/contracts";
 import { downloadBlob } from "@/lib/domain/invoice";
 import {
   buildPaymentHistoryRows,
+  suggestedExpensePaymentDate,
   suggestOpenFinanceMatches,
   type UnifiedHistoryRow,
 } from "@/lib/domain/ledgerHistory";
@@ -223,7 +225,7 @@ export function DespesasPage() {
     setPayInstallmentTarget(null);
     setPayTarget(bill);
     setPayAmount((remaining / 100).toFixed(2).replace(".", ","));
-    setPayDate(today);
+    setPayDate(suggestedExpensePaymentDate(bill.dueDate, today, bill.period));
     setPayQuits(true);
     setPayDiscount("0,00");
     setPaySurcharge("0,00");
@@ -247,7 +249,7 @@ export function DespesasPage() {
     setPayTarget(null);
     setPayInstallmentTarget(inst);
     setPayAmount((remaining / 100).toFixed(2).replace(".", ","));
-    setPayDate(today);
+    setPayDate(suggestedExpensePaymentDate(inst.dueDate, today));
     setPayQuits(true);
     setPayDiscount("0,00");
     setPaySurcharge("0,00");
@@ -396,7 +398,7 @@ export function DespesasPage() {
     setCellEdit({ row, monthKey });
     setCellExpected((safeExpected / 100).toFixed(2).replace(".", ","));
     setCellPaid(((cell.paidCents ?? safeExpected) / 100).toFixed(2).replace(".", ","));
-    setCellDate(cell.paidDate ?? today);
+    setCellDate(cell.paidDate ?? suggestedExpensePaymentDate(clampDueDate(row.year, Number(monthKey), row.dueDay), today, `${row.year}-${monthKey}`));
     setCellSettled(cell.isSettled);
     setCellAccountId(primaryBill?.accountId ?? "");
     setCellBankTxId(primaryBill?.bankTransactionId ?? "");

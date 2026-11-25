@@ -34,3 +34,5 @@ use the editor.
 - ZettaPreferences owns global theme and accent state; persist preferences in owner-scoped user_settings and private avatar paths to avoid competing theme writers.
 - Keep banking credentials encrypted in the existing owner-scoped vault; settings contain only safe preferences, never plaintext banking secrets.
 - Use protected TanStack server functions for new app-internal integration calls and preserve existing import document identifiers for compatibility.
+- Financial history uses one regime-aware reference-month helper for grouping, filters and years; competence comes from the obligation period or due date, never payment date.
+- Generic payment-date repair is an explicit owner-scoped action that archives original documents before date-only updates; never move cash, change amounts or repair on page load.

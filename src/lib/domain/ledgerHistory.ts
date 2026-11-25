@@ -10,6 +10,7 @@ import type {
 } from "@/types/orion";
 
 export type HistoryDirection = "payment" | "receipt";
+export type HistoryRegime = "cash" | "competence";
 
 export type DifferenceTone = "discount" | "surcharge" | "open" | "none";
 
@@ -77,6 +78,7 @@ export type HistoryFilters = {
   year: string; // "all" or YYYY
   month: string; // "all" or "01".."12"
   party: string;
+  regime?: HistoryRegime;
 };
 
 export type ResolvedAttachmentItem = {
@@ -451,7 +453,7 @@ export function buildPaymentHistoryRows(state: OrionState): UnifiedHistoryRow[] 
         installmentId: ev.installmentId ?? undefined,
         contractId: contractId ?? undefined,
         annualRowId: ev.annualRowId ?? linkedBill?.sourceAnnualId ?? undefined,
-        period: ev.period ?? linkedBill?.period ?? undefined,
+        period: ev.period ?? linkedBill?.period ?? linkedInst?.dueDate.slice(0, 7) ?? undefined,
         cardId: ev.cardId ?? linkedBill?.cardId ?? undefined,
       },
     });
@@ -817,6 +819,23 @@ export function buildReceiptHistoryRows(state: OrionState): UnifiedHistoryRow[] 
   return rows;
 }
 
+/** Competência nunca é inferida da data do pagamento. */
+export function historyCompetence(row: UnifiedHistoryRow): string | null {
+  const period = row.rawRefs.period;
+  if (period && /^\d{4}-(0[1-9]|1[0-2])$/.test(period)) return period;
+  return validIsoDate(row.dueDate)?.slice(0, 7) ?? null;
+}
+
+export function historyReferenceMonth(row: UnifiedHistoryRow, regime: HistoryRegime = "cash"): string | null {
+  return regime === "competence" ? historyCompetence(row) : row.effectiveDate?.slice(0, 7) ?? null;
+}
+
+export function suggestedExpensePaymentDate(dueDate: string | null | undefined, today: string, period?: string): string {
+  const due = validIsoDate(dueDate);
+  const competence = period ?? due?.slice(0, 7);
+  return due && competence && competence < today.slice(0, 7) ? due : today;
+}
+
 export function filterHistoryRows(
   rows: UnifiedHistoryRow[],
   filters: HistoryFilters,
@@ -829,11 +848,11 @@ export function filterHistoryRows(
 
   return rows.filter((row) => {
     if (filters.year !== "all") {
-      const refYear = row.effectiveDate?.slice(0, 4) ?? row.dueDate?.slice(0, 4) ?? "";
+      const refYear = historyReferenceMonth(row, filters.regime)?.slice(0, 4) ?? (filters.regime !== "competence" ? row.dueDate?.slice(0, 4) : "") ?? "";
       if (refYear !== filters.year) return false;
     }
     if (filters.month !== "all") {
-      if (!row.effectiveDate || row.effectiveDate.slice(5, 7) !== filters.month) {
+      if (historyReferenceMonth(row, filters.regime)?.slice(5, 7) !== filters.month) {
         return false;
       }
     }
@@ -874,22 +893,23 @@ export function formatMonthYearTitle(ym: string): string {
 export function groupHistoryByMonth(
   rows: UnifiedHistoryRow[],
   direction: HistoryDirection,
+  regime: HistoryRegime = "cash",
 ): MonthlyHistoryGroup[] {
   const byMonth = new Map<string, UnifiedHistoryRow[]>();
   const pendingRows: UnifiedHistoryRow[] = [];
 
   for (const row of rows) {
-    if (!row.effectiveDate || row.isPendingDate) {
+    const ym = historyReferenceMonth(row, regime);
+    if (!ym) {
       pendingRows.push(row);
       continue;
     }
-    const ym = row.effectiveDate.slice(0, 7);
     byMonth.set(ym, [...(byMonth.get(ym) ?? []), row]);
   }
 
   const sortRows = (list: UnifiedHistoryRow[]) =>
     [...list].sort((a, b) => {
-      const effCmp = (b.effectiveDate ?? "").localeCompare(a.effectiveDate ?? "");
+      const effCmp = (regime === "competence" ? b.dueDate ?? "" : b.effectiveDate ?? "").localeCompare(regime === "competence" ? a.dueDate ?? "" : a.effectiveDate ?? "");
       if (effCmp !== 0) return effCmp;
       const dueCmp = (b.dueDate ?? "").localeCompare(a.dueDate ?? "");
       if (dueCmp !== 0) return dueCmp;
@@ -996,10 +1016,10 @@ export function resolveRowAttachments(
   return items;
 }
 
-export function extractAvailableHistoryYears(rows: UnifiedHistoryRow[]): string[] {
+export function extractAvailableHistoryYears(rows: UnifiedHistoryRow[], regime: HistoryRegime = "cash"): string[] {
   const years = new Set<string>();
   for (const r of rows) {
-    const y = r.effectiveDate?.slice(0, 4) ?? r.dueDate?.slice(0, 4);
+    const y = historyReferenceMonth(r, regime)?.slice(0, 4) ?? (regime === "cash" ? r.dueDate?.slice(0, 4) : null);
     if (y && /^\d{4}$/.test(y)) years.add(y);
   }
   return [...years].sort((a, b) => b.localeCompare(a));
@@ -1024,7 +1044,7 @@ export function buildHistoryCopyReport(
   const dateCol = direction === "payment" ? "Pagamento" : "Recebimento";
   const actualCol = direction === "payment" ? "Valor pago" : "Valor recebido";
 
-  const filterParts: string[] = [];
+  const filterParts: string[] = [filters.regime === "competence" ? "Regime: Competência" : "Regime: Caixa"];
   filterParts.push(`Ano: ${filters.year === "all" ? "Todos" : filters.year}`);
   filterParts.push(
     `Mês: ${filters.month === "all" ? "Todos" : (MONTH_NAMES_PT[Number(filters.month) - 1] ?? filters.month)}`,
