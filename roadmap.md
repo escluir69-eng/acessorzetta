@@ -1,5 +1,10 @@
 # Migração Órion → Lovable (roadmap)
 
+## Histórico financeiro por competência
+- [ ] Alternar agrupamento e filtros entre caixa e competência
+- [ ] Adicionar correção auditada das datas genéricas de 15/11/2026, sem alterar valores ou saldos
+- [ ] Sugerir vencimento ao quitar contas e células de meses anteriores; testar fluxo autenticado
+
 ## Repaginação Zetta
 - [x] Aplicar nome, logos separadas e identidade visual oficial
 - [x] Renovar login com e-mail, Google, Apple, link mágico e recuperação (provedores habilitados; acesso externo e entrega de e-mail não exercitados)
