@@ -596,6 +596,7 @@ export type GarageFueling = {
   id: string;
   vehicleId: string;
   driverId?: string;
+  tripId?: string;
   date: string;
   odometer: number;
   fuelType: GarageFuelType;
@@ -630,6 +631,7 @@ export type GarageExpense = {
   id: string;
   vehicleId: string;
   driverId?: string;
+  tripId?: string;
   category: string;
   date: string;
   amount: number;
@@ -687,6 +689,8 @@ export type GarageChecklist = {
   generalNotes?: string;
 };
 
+export type GarageRouteStatus = "PLANEJADA" | "EM_ANDAMENTO" | "CONCLUIDA";
+
 export type GarageRoute = {
   id: string;
   vehicleId: string;
@@ -695,10 +699,13 @@ export type GarageRoute = {
   origin: string;
   destination: string;
   startOdometer: number;
-  endOdometer: number;
+  endOdometer?: number;
   distanceKm: number;
   estimatedKm?: number;
   purpose?: string;
+  status?: GarageRouteStatus;
+  tripId?: string;
+  completionChecklist?: string[];
 };
 
 export type GarageReminder = {

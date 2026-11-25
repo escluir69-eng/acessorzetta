@@ -33,6 +33,7 @@ export const RoutesRemindersPage: React.FC<RoutesRemindersPageProps> = ({ onNewR
     toggleReminder,
     deleteReminder,
     deleteRoute,
+    completeRoute,
   } = useGarage();
 
   const today = todayBR();
@@ -41,11 +42,21 @@ export const RoutesRemindersPage: React.FC<RoutesRemindersPageProps> = ({ onNewR
   const [tripEnd, setTripEnd] = useState(today);
   const [tripBudget, setTripBudget] = useState("");
   const [tripNotes, setTripNotes] = useState("");
+  const [closingRouteId, setClosingRouteId] = useState<string | null>(null);
+  const [closingOdometer, setClosingOdometer] = useState("");
+  const [closingChecks, setClosingChecks] = useState<string[]>([]);
+  const closeChecklist = ["Abastecimento e autonomia conferidos", "Pneus, estepe e calibragem conferidos", "Documentos e habilitação conferidos", "Pedágios, despesas e comprovantes revisados"];
 
   const vehicleMap = useMemo(
     () => new Map(snapshot.vehicles.map((v) => [v.id, v])),
     [snapshot.vehicles],
   );
+
+  const tripReports = useMemo(() => state.trips.map((trip) => {
+    const tripRoutes = snapshot.routes.filter((route) => route.tripId === trip.id);
+    const vehicle = tripRoutes[0] ? vehicleMap.get(tripRoutes[0].vehicleId) : undefined;
+    return buildTripAnalyticsReport(trip, snapshot.routes, snapshot.fuelings, snapshot.expenses, vehicle);
+  }).filter((report) => selectedVehicleFilter === "TODOS" || report.routes.some((route) => route.vehicleId === selectedVehicleFilter)), [state.trips, snapshot.routes, snapshot.fuelings, snapshot.expenses, vehicleMap, selectedVehicleFilter]);
 
   const filteredReminders = useMemo(() => {
     return snapshot.reminders.filter(
@@ -213,12 +224,17 @@ export const RoutesRemindersPage: React.FC<RoutesRemindersPageProps> = ({ onNewR
                       <div className="font-bold text-[#0c1928]">
                         {route.origin} → {route.destination}
                       </div>
+                      {route.tripId && state.trips.find((trip) => trip.id === route.tripId) && (
+                        <div className="mt-0.5 text-[10px] font-semibold text-[#173d4a]">
+                          Viagem: {state.trips.find((trip) => trip.id === route.tripId)?.destination}
+                        </div>
+                      )}
                       <div className="mt-0.5 text-[#52616a]">
-                        {formatDateBR(route.date)} · {veh?.plate ?? ""} ·{" "}
+                        {formatDateBR(route.date)} · {veh?.plate ?? ""} · {({ PLANEJADA: "Planejada", EM_ANDAMENTO: "Em andamento", CONCLUIDA: "Concluída" }[route.status ?? "CONCLUIDA"])} ·{" "}
                         <span className="tabular-nums font-semibold text-[#0c1928]">
                           {formatNumberBR(route.distanceKm, 0)} km
                         </span>{" "}
-                        ({formatKm(route.startOdometer)} → {formatKm(route.endOdometer)})
+                        ({formatKm(route.startOdometer)} → {route.endOdometer === undefined ? "Em aberto" : formatKm(route.endOdometer)})
                         {audit?.flagged && (
                           <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                             {audit.deltaPercent > 0 ? "+" : ""}
@@ -227,6 +243,11 @@ export const RoutesRemindersPage: React.FC<RoutesRemindersPageProps> = ({ onNewR
                         )}
                       </div>
                     </div>
+                    {(route.status ?? "CONCLUIDA") !== "CONCLUIDA" && (
+                      <button type="button" onClick={() => { setClosingRouteId(route.id); setClosingOdometer(""); setClosingChecks([]); }} className="shrink-0 rounded-lg border border-[#173d4a] px-2.5 py-1.5 text-[10px] font-semibold text-[#173d4a] hover:bg-[#edf1f3]">
+                        Concluir
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -241,6 +262,28 @@ export const RoutesRemindersPage: React.FC<RoutesRemindersPageProps> = ({ onNewR
                   </div>
                 );
               })}
+            </div>
+          )}
+          {closingRouteId && (
+            <div className="space-y-3 rounded-xl border border-[#b99555] bg-[#fffdf8] p-3">
+              <div className="text-xs font-bold text-[#0c1928]">Concluir percurso e atualizar hodômetro</div>
+              <label className="block text-xs font-semibold text-[#52616a]">Hodômetro final (km)
+                <input type="number" min="0" value={closingOdometer} onChange={(e) => setClosingOdometer(e.target.value)} className="mt-1 h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-3 text-xs" placeholder="Informe a leitura final" />
+              </label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {closeChecklist.map((item) => <label key={item} className="flex items-start gap-2 text-[11px] text-[#52616a]">
+                  <input type="checkbox" checked={closingChecks.includes(item)} onChange={(e) => setClosingChecks((prev) => e.target.checked ? [...prev, item] : prev.filter((v) => v !== item))} className="mt-0.5" />{item}
+                </label>)}
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setClosingRouteId(null)} className="rounded-lg border border-[#cbd3d8] px-3 py-2 text-xs">Cancelar</button>
+                <button type="button" disabled={!closingOdometer || closingChecks.length !== closeChecklist.length} onClick={() => {
+                  const route = snapshot.routes.find((item) => item.id === closingRouteId);
+                  const finalKm = Number(closingOdometer);
+                  if (!route || !Number.isFinite(finalKm) || finalKm <= route.startOdometer) { toast.error("O hodômetro final deve ser maior que o inicial."); return; }
+                  void completeRoute(closingRouteId, finalKm, closingChecks).then(() => { toast.success("Percurso concluído e hodômetro atualizado."); setClosingRouteId(null); }).catch((error) => toast.error(error instanceof Error ? error.message : "Não foi possível concluir o percurso."));
+                }} className="rounded-lg bg-[#173d4a] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Confirmar conclusão</button>
+              </div>
             </div>
           )}
         </section>

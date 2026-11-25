@@ -1419,10 +1419,19 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           origin: String(d["origin"] ?? ""),
           destination: String(d["destination"] ?? ""),
           startOdometer: Number(d["startOdometer"] ?? 0),
-          endOdometer: Number(d["endOdometer"] ?? 0),
+          ...(typeof d["endOdometer"] === "number" && Number.isFinite(d["endOdometer"])
+            ? { endOdometer: d["endOdometer"] }
+            : {}),
           distanceKm: Number(d["distanceKm"] ?? 0),
           ...(typeof d["estimatedKm"] === "number" ? { estimatedKm: d["estimatedKm"] } : {}),
           ...(typeof d["purpose"] === "string" ? { purpose: d["purpose"] } : {}),
+          ...(d["status"] === "PLANEJADA" || d["status"] === "EM_ANDAMENTO" || d["status"] === "CONCLUIDA"
+            ? { status: d["status"] as GarageRoute["status"] }
+            : {}),
+          ...(typeof d["tripId"] === "string" ? { tripId: d["tripId"] } : {}),
+          ...(Array.isArray(d["completionChecklist"])
+            ? { completionChecklist: d["completionChecklist"].filter((item): item is string => typeof item === "string").slice(0, 4) }
+            : {}),
         }),
         (garageRoutes) =>
           setState((prev) => ({
@@ -4875,39 +4884,54 @@ export function OrionProvider({ children }: { children: ReactNode }) {
 
   const addGarageFueling: OrionContextValue["addGarageFueling"] = async (fueling) => {
     const ownerId = requireUid();
-    const id = uid("gf");
     const vehicle = state.vehicles.find((v) => v.id === fueling.vehicleId);
     if (!vehicle) throw new Error("Veículo inválido.");
-    const batch = writeBatch(db);
-    batch.set(
-      doc(db, "users", ownerId, "garageFuelings", id),
-      stripUndefined({
-        ownerId,
-        vehicleId: fueling.vehicleId,
-        driverId: fueling.driverId ? clampStr(fueling.driverId, 128) : undefined,
-        date: fueling.date,
-        odometer: Math.max(0, Number(fueling.odometer)),
-        fuelType: fueling.fuelType,
-        quantity: Number(fueling.quantity),
-        unitPrice: Number(fueling.unitPrice),
-        totalCost: Number(fueling.totalCost),
-        fullTank: Boolean(fueling.fullTank),
-        stationName: fueling.stationName ? clampStr(fueling.stationName, 120) : undefined,
-        nfceKey: fueling.nfceKey ? clampStr(fueling.nfceKey, 80) : undefined,
-        notes: fueling.notes ? clampStr(fueling.notes, 300) : undefined,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      }),
-    );
-    if (fueling.odometer > vehicle.odometerKm) {
-      batch.update(doc(db, "users", ownerId, "vehicles", vehicle.id), {
-        odometerKm: Number(fueling.odometer),
-        updatedAt: serverTimestamp(),
-      });
+    const rawNfceKey = fueling.nfceKey?.trim();
+    if (rawNfceKey && !/^\d{44}$/.test(rawNfceKey)) {
+      throw new Error("A chave da NFC-e deve conter exatamente 44 dígitos. Use Ler NFC-e para extrair a chave.");
     }
+    const id = rawNfceKey ? `nfce-${rawNfceKey}` : uid("gf");
+    const fuelingRef = doc(db, "users", ownerId, "garageFuelings", id);
+    const vehicleRef = doc(db, "users", ownerId, "vehicles", vehicle.id);
+    const payload = stripUndefined({
+      ownerId,
+      vehicleId: fueling.vehicleId,
+      driverId: fueling.driverId ? clampStr(fueling.driverId, 128) : undefined,
+      date: fueling.date,
+      odometer: Math.max(0, Number(fueling.odometer)),
+      fuelType: fueling.fuelType,
+      quantity: Number(fueling.quantity),
+      unitPrice: Number(fueling.unitPrice),
+      totalCost: Number(fueling.totalCost),
+      fullTank: Boolean(fueling.fullTank),
+      stationName: fueling.stationName ? clampStr(fueling.stationName, 120) : undefined,
+      nfceKey: rawNfceKey,
+      notes: fueling.notes ? clampStr(fueling.notes, 300) : undefined,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
     try {
-      await batch.commit();
+      if (rawNfceKey) {
+        await runTransaction(db, async (tx) => {
+          const existing = await tx.get(fuelingRef);
+          if (existing.exists()) throw new Error("Esta NFC-e já foi registrada na garagem.");
+          const vehicleSnap = await tx.get(vehicleRef);
+          if (!vehicleSnap.exists()) throw new Error("Veículo não encontrado.");
+          tx.set(fuelingRef, payload);
+          if (Number(fueling.odometer) > Number(vehicleSnap.data()["odometerKm"] ?? 0)) {
+            tx.update(vehicleRef, { odometerKm: Number(fueling.odometer), updatedAt: serverTimestamp() });
+          }
+        });
+      } else {
+        const batch = writeBatch(db);
+        batch.set(fuelingRef, payload);
+        if (fueling.odometer > vehicle.odometerKm) {
+          batch.update(vehicleRef, { odometerKm: Number(fueling.odometer), updatedAt: serverTimestamp() });
+        }
+        await batch.commit();
+      }
     } catch (err) {
+      if (err instanceof Error && /NFC-e|Veículo não encontrado/.test(err.message)) throw err;
       handleFirestoreError(err, OperationType.CREATE, `users/${ownerId}/garageFuelings/${id}`);
     }
   };
@@ -5285,7 +5309,21 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     const id = uid("grt");
     const vehicle = state.vehicles.find((v) => v.id === route.vehicleId);
     if (!vehicle) throw new Error("Veículo inválido.");
-    const distanceKm = Math.max(0, Number((route.endOdometer - route.startOdometer).toFixed(1)));
+    const status = route.status ?? "CONCLUIDA";
+    const endOdometer =
+      typeof route.endOdometer === "number" && Number.isFinite(route.endOdometer)
+        ? Math.max(0, Number(route.endOdometer))
+        : undefined;
+    if (status === "CONCLUIDA" && (endOdometer === undefined || endOdometer <= route.startOdometer)) {
+      throw new Error("Informe o hodômetro final maior que o inicial para concluir o percurso.");
+    }
+    if (endOdometer !== undefined && endOdometer <= route.startOdometer) {
+      throw new Error("O hodômetro final deve ser maior que o inicial.");
+    }
+    const distanceKm =
+      endOdometer === undefined
+        ? 0
+        : Math.max(0, Number((endOdometer - route.startOdometer).toFixed(1)));
     const batch = writeBatch(db);
     batch.set(
       doc(db, "users", ownerId, "garageRoutes", id),
@@ -5297,8 +5335,10 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         origin: clampStr(route.origin, 120),
         destination: clampStr(route.destination, 120),
         startOdometer: Math.max(0, Number(route.startOdometer)),
-        endOdometer: Math.max(0, Number(route.endOdometer)),
+        endOdometer,
         distanceKm,
+        status,
+        tripId: route.tripId ? clampStr(route.tripId, 128) : undefined,
         estimatedKm:
           typeof route.estimatedKm === "number" && route.estimatedKm > 0
             ? Number(route.estimatedKm)
@@ -5308,9 +5348,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         updatedAt: serverTimestamp(),
       }),
     );
-    if (route.endOdometer > vehicle.odometerKm) {
+    if (endOdometer !== undefined && status === "CONCLUIDA" && endOdometer > vehicle.odometerKm) {
       batch.update(doc(db, "users", ownerId, "vehicles", vehicle.id), {
-        odometerKm: Number(route.endOdometer),
+        odometerKm: endOdometer,
         updatedAt: serverTimestamp(),
       });
     }
@@ -5318,6 +5358,37 @@ export function OrionProvider({ children }: { children: ReactNode }) {
       await batch.commit();
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `users/${ownerId}/garageRoutes/${id}`);
+    }
+  };
+
+  const completeGarageRoute: OrionContextValue["completeGarageRoute"] = async (id, rawEndOdometer, checklist) => {
+    const ownerId = requireUid();
+    const requiredChecks = ["Abastecimento e autonomia conferidos", "Pneus, estepe e calibragem conferidos", "Documentos e habilitação conferidos", "Pedágios, despesas e comprovantes revisados"];
+    if (!Array.isArray(checklist) || requiredChecks.some((item) => !checklist.includes(item))) {
+      throw new Error("Conclua todos os itens da revisão antes de encerrar o percurso.");
+    }
+    const endOdometer = Number(rawEndOdometer);
+    if (!Number.isFinite(endOdometer) || endOdometer < 0) throw new Error("Informe um hodômetro final válido.");
+    const routeRef = doc(db, "users", ownerId, "garageRoutes", id);
+    try {
+      await runTransaction(db, async (tx) => {
+        const routeSnap = await tx.get(routeRef);
+        if (!routeSnap.exists()) throw new Error("Percurso não encontrado.");
+        const route = routeSnap.data() as GarageRoute;
+        if ((route.status ?? "CONCLUIDA") === "CONCLUIDA") throw new Error("Este percurso já está concluído.");
+        if (endOdometer <= Number(route.startOdometer)) throw new Error("O hodômetro final deve ser maior que o inicial.");
+        const vehicleRef = doc(db, "users", ownerId, "vehicles", route.vehicleId);
+        const vehicleSnap = await tx.get(vehicleRef);
+        if (!vehicleSnap.exists()) throw new Error("Veículo do percurso não encontrado.");
+        const distanceKm = Number((endOdometer - Number(route.startOdometer)).toFixed(1));
+        tx.update(routeRef, { status: "CONCLUIDA", completionChecklist: requiredChecks, endOdometer, distanceKm, updatedAt: serverTimestamp() });
+        if (endOdometer > Number(vehicleSnap.data()["odometerKm"] ?? 0)) {
+          tx.update(vehicleRef, { odometerKm: endOdometer, updatedAt: serverTimestamp() });
+        }
+      });
+    } catch (err) {
+      if (err instanceof Error && /Percurso|hodômetro|concluído|Veículo/.test(err.message)) throw err;
+      handleFirestoreError(err, OperationType.UPDATE, `users/${ownerId}/garageRoutes/${id}`);
     }
   };
 
@@ -5943,6 +6014,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         addGarageDocumentsBatch: addGarageDocumentsBatch,
         addGarageChecklist,
         addGarageRoute,
+        completeGarageRoute,
         deleteGarageRoute,
         addGarageReminder,
         toggleGarageReminder,

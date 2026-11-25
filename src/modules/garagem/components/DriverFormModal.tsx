@@ -5,6 +5,7 @@ import { todayBR } from "@/lib/domain/money";
 import { useGarage } from "../context/garageContext";
 import { driverSchema } from "../schemas/garage.schemas";
 import type { PersonalDriver } from "../types/garage.types";
+import { resolveDriverCnhCategory } from "../utils/driver-category";
 
 interface DriverFormModalProps {
   open: boolean;
@@ -20,7 +21,8 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
   const { snapshot, upsertDriver } = useGarage();
   const [name, setName] = useState("");
   const [cnhNumber, setCnhNumber] = useState("");
-  const [cnhCategory, setCnhCategory] = useState("B");
+  const [cnhBaseCategory, setCnhBaseCategory] = useState("B");
+  const [hasCategoryA, setHasCategoryA] = useState(false);
   const [cnhExpiry, setCnhExpiry] = useState(todayBR());
   const [phone, setPhone] = useState("");
   const [allowedVehicleIds, setAllowedVehicleIds] = useState<string[]>([]);
@@ -33,7 +35,11 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
     if (editingDriver) {
       setName(editingDriver.name);
       setCnhNumber(editingDriver.cnhNumber);
-      setCnhCategory(editingDriver.cnhCategory);
+      const existingCategory = editingDriver.cnhCategory.toUpperCase();
+      setHasCategoryA(existingCategory.includes("A"));
+      setCnhBaseCategory(
+        existingCategory === "A" ? "NENHUMA" : existingCategory.replace("A", "") || "NENHUMA",
+      );
       setCnhExpiry(editingDriver.cnhExpiry);
       setPhone(editingDriver.phone ?? "");
       setAllowedVehicleIds(editingDriver.allowedVehicleIds);
@@ -41,7 +47,8 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
     } else {
       setName("");
       setCnhNumber("");
-      setCnhCategory("B");
+      setCnhBaseCategory("B");
+      setHasCategoryA(false);
       setCnhExpiry(todayBR());
       setPhone("");
       setAllowedVehicleIds(snapshot.vehicles.map((v) => v.id));
@@ -65,7 +72,7 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
     const parsed = driverSchema.safeParse({
       name,
       cnhNumber,
-      cnhCategory,
+      cnhCategory: resolveDriverCnhCategory(cnhBaseCategory, hasCategoryA),
       cnhExpiry,
       phone: phone || undefined,
       allowedVehicleIds,
@@ -152,13 +159,12 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
                 Categoria *
               </label>
               <select
-                value={cnhCategory}
-                onChange={(e) => setCnhCategory(e.target.value)}
+                value={cnhBaseCategory}
+                onChange={(e) => setCnhBaseCategory(e.target.value)}
                 className="h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs"
               >
-                <option value="A">A</option>
+                <option value="NENHUMA">Nenhuma</option>
                 <option value="B">B</option>
-                <option value="AB">AB</option>
                 <option value="C">C</option>
                 <option value="D">D</option>
                 <option value="E">E</option>
@@ -177,6 +183,19 @@ export const DriverFormModal: React.FC<DriverFormModalProps> = ({
               />
             </div>
           </div>
+
+          <label className="flex items-center gap-2 rounded-lg border border-[#dce2e6] bg-[#f7f8fa] px-3 py-2.5 text-xs font-semibold text-[#0c1928]">
+            <input
+              type="checkbox"
+              checked={hasCategoryA}
+              onChange={(e) => setHasCategoryA(e.target.checked)}
+              className="size-4 accent-[#173d4a]"
+            />
+            <span aria-hidden="true">🏍️</span> Habilitado para Moto (Cat. A)
+            <span className="ml-auto text-[10px] font-bold text-[#52616a]">
+              {resolveDriverCnhCategory(cnhBaseCategory, hasCategoryA) || "Selecione a categoria"}
+            </span>
+          </label>
 
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div>

@@ -32,7 +32,9 @@ export const vehicleSchema = z.object({
 export const driverSchema = z.object({
   name: z.string().trim().min(2, "Informe o nome do condutor"),
   cnhNumber: z.string().trim().min(5, "Número da CNH inválido").max(20, "CNH muito longa"),
-  cnhCategory: z.string().trim().min(1, "Selecione a categoria"),
+  cnhCategory: z.enum(["A", "B", "C", "D", "E", "AB", "AC", "AD", "AE"], {
+    errorMap: () => ({ message: "Selecione uma categoria válida da CNH" }),
+  }),
   cnhExpiry: z.string().regex(isoDateRegex, "Data de validade inválida"),
   phone: z.string().trim().optional(),
   allowedVehicleIds: z.array(z.string()),
@@ -42,6 +44,7 @@ export const driverSchema = z.object({
 export const fuelingSchema = z.object({
   vehicleId: z.string().min(1, "Selecione o veículo"),
   driverId: z.string().optional(),
+  tripId: z.string().max(128).optional(),
   date: z.string().regex(isoDateRegex, "Data inválida"),
   odometer: z.coerce.number().min(0, "Informe o hodômetro atual"),
   fuelType: z.enum(["GASOLINA", "ETANOL", "DIESEL", "GNV", "ELETRICO", "FLEX"]),
@@ -72,6 +75,7 @@ export const maintenanceSchema = z.object({
 export const personalExpenseSchema = z.object({
   vehicleId: z.string().min(1, "Selecione o veículo"),
   driverId: z.string().optional(),
+  tripId: z.string().max(128).optional(),
   category: z.string().trim().min(2, "Informe a categoria"),
   date: z.string().regex(isoDateRegex, "Data inválida"),
   amount: z.coerce.number().positive("O valor deve ser maior que zero"),
@@ -101,14 +105,25 @@ export const routeTripSchema = z
     origin: z.string().trim().min(2, "Informe a origem"),
     destination: z.string().trim().min(2, "Informe o destino"),
     startOdometer: z.coerce.number().min(0, "Hodômetro inicial inválido"),
-    endOdometer: z.coerce.number().min(0, "Hodômetro final inválido"),
+    endOdometer: z.coerce.number().min(0, "Hodômetro final inválido").optional(),
+    status: z.enum(["PLANEJADA", "EM_ANDAMENTO", "CONCLUIDA"]).optional(),
+    tripId: z.string().max(128).optional(),
     estimatedKm: z.coerce.number().min(0).optional(),
     purpose: z.string().trim().optional(),
   })
-  .refine((data) => data.endOdometer > data.startOdometer, {
-    message: "O hodômetro final deve ser maior que o hodômetro inicial",
-    path: ["endOdometer"],
-  });
+  .refine(
+    (data) => {
+      const status = data.status ?? "CONCLUIDA";
+      if (status === "CONCLUIDA") {
+        return data.endOdometer !== undefined && data.endOdometer > data.startOdometer;
+      }
+      return data.endOdometer === undefined || data.endOdometer > data.startOdometer;
+    },
+    {
+      message: "Informe um hodômetro final maior que o inicial para concluir o percurso",
+      path: ["endOdometer"],
+    },
+  );
 
 export const reminderSchema = z
   .object({

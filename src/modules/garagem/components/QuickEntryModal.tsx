@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { enqueueGarageOfflineFueling, readGarageOfflineFuelingQueue, removeGarageOfflineFueling } from "../utils/garage-offline-fueling-queue";
+import { BrowserQRCodeReader } from "@zxing/browser";
 import {
   AlertTriangle,
   CarFront,
@@ -12,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { todayBR } from "@/lib/domain/money";
+import { useOrion } from "@/store/orionContext";
 import { useGarage } from "../context/garageContext";
 import {
   fineSchema,
@@ -36,6 +39,13 @@ const ENTRY_TABS: Array<{ id: QuickEntryKind; label: string; icon: React.Compone
   { id: "percurso", label: "Percurso (km)", icon: MapPin },
 ];
 
+const ROUTE_PRE_CLOSE_ITEMS = [
+  "Abastecimento e autonomia conferidos",
+  "Pneus, estepe e calibragem conferidos",
+  "Documentos e habilitação conferidos",
+  "Pedágios, despesas e comprovantes revisados",
+];
+
 const PERSONAL_EXPENSE_CATEGORIES = [
   "Pedágio / Tag Sem Parar",
   "Estacionamento",
@@ -47,6 +57,7 @@ const PERSONAL_EXPENSE_CATEGORIES = [
 ];
 
 export const QuickEntryModal: React.FC = () => {
+  const { state: orionState, user } = useOrion();
   const {
     snapshot,
     selectedVehicleFilter,
@@ -76,7 +87,11 @@ export const QuickEntryModal: React.FC = () => {
   const [fullTank, setFullTank] = useState(true);
   const [stationName, setStationName] = useState("");
   const [nfceRaw, setNfceRaw] = useState("");
+  const [isNfceScanning, setIsNfceScanning] = useState(false);
+  const nfceVideoRef = useRef<HTMLVideoElement | null>(null);
+  const nfceScannerControlsRef = useRef<{ stop: () => void } | null>(null);
   const [fuelNotes, setFuelNotes] = useState("");
+  const [selectedTripId, setSelectedTripId] = useState("");
 
   // Maintenance state
   const [maintType, setMaintType] = useState<MaintenanceType>("PREVENTIVA");
@@ -94,6 +109,9 @@ export const QuickEntryModal: React.FC = () => {
 
   // Fine state
   const [infractionCode, setInfractionCode] = useState("");
+  const [fineTime, setFineTime] = useState("");
+  const [fineNoticeText, setFineNoticeText] = useState("");
+  const [fineNoticeExtract, setFineNoticeExtract] = useState<FineNoticeExtract | null>(null);
   const [fineDescription, setFineDescription] = useState("");
   const [fineLocation, setFineLocation] = useState("");
   const [finePoints, setFinePoints] = useState("4");
@@ -106,11 +124,19 @@ export const QuickEntryModal: React.FC = () => {
   const [destination, setDestination] = useState("");
   const [startOdometer, setStartOdometer] = useState("");
   const [endOdometer, setEndOdometer] = useState("");
+  const [routeStatus, setRouteStatus] = useState<"PLANEJADA" | "EM_ANDAMENTO" | "CONCLUIDA">("CONCLUIDA");
+  const [routeTripId, setRouteTripId] = useState("");
+  const [routeChecklist, setRouteChecklist] = useState<string[]>([]);
   const [estimatedKm, setEstimatedKm] = useState("");
   const [purpose, setPurpose] = useState("");
 
   useEffect(() => {
-    if (!isQuickEntryOpen) return;
+    if (!isQuickEntryOpen) {
+      nfceScannerControlsRef.current?.stop();
+      nfceScannerControlsRef.current = null;
+      setIsNfceScanning(false);
+      return;
+    }
     const defaultVeh =
       snapshot.vehicles.find((v) => v.id === selectedVehicleFilter) ?? snapshot.vehicles[0];
     setVehicleId(defaultVeh?.id ?? "");
@@ -121,6 +147,9 @@ export const QuickEntryModal: React.FC = () => {
     setMaintOdometer(defaultVeh ? String(defaultVeh.currentOdometer) : "");
     setStartOdometer(defaultVeh ? String(defaultVeh.currentOdometer) : "");
     setEndOdometer("");
+    setRouteStatus("CONCLUIDA");
+    setRouteTripId("");
+    setRouteChecklist([]);
     setQuantity("");
     setUnitPrice("");
     setTotalCost("");
@@ -128,6 +157,7 @@ export const QuickEntryModal: React.FC = () => {
     setStationName("");
     setNfceRaw("");
     setFuelNotes("");
+    setSelectedTripId("");
     setMaintCategory("");
     setProviderName("");
     setPartsCost("0");
@@ -136,6 +166,9 @@ export const QuickEntryModal: React.FC = () => {
     setExpAmount("");
     setExpDescription("");
     setInfractionCode("");
+    setFineTime("");
+    setFineNoticeText("");
+    setFineNoticeExtract(null);
     setFineDescription("");
     setFineLocation("");
     setFinePoints("4");
@@ -146,6 +179,26 @@ export const QuickEntryModal: React.FC = () => {
     setPurpose("");
     setErrorMsg(null);
   }, [isQuickEntryOpen, selectedVehicleFilter, snapshot.vehicles, snapshot.drivers]);
+
+  useEffect(() => {
+    const userId = user?.uid;
+    if (!userId || typeof window === "undefined") return;
+    const syncQueue = async () => {
+      if (!navigator.onLine) return;
+      const pending = readGarageOfflineFuelingQueue(userId);
+      for (const item of pending) {
+        try {
+          await addFueling(item.payload as Parameters<typeof addFueling>[0]);
+          if (removeGarageOfflineFueling(userId, item.id)) toast.success("Abastecimento offline sincronizado.");
+        } catch {
+          break; // keep the pending item for retry on the next online event
+        }
+      }
+    };
+    void syncQueue();
+    window.addEventListener("online", syncQueue);
+    return () => window.removeEventListener("online", syncQueue);
+  }, [user?.uid, addFueling]);
 
   if (!isQuickEntryOpen) return null;
 
@@ -161,6 +214,37 @@ export const QuickEntryModal: React.FC = () => {
       setFuelType(v.fuelType === "FLEX" ? "GASOLINA" : v.fuelType);
       if (v.assignedDriverId) setDriverId(v.assignedDriverId);
     }
+  };
+
+  const startNfceCamera = async () => {
+    if (!nfceVideoRef.current || isNfceScanning) return;
+    setErrorMsg(null);
+    try {
+      const reader = new BrowserQRCodeReader();
+      const controls = await reader.decodeFromVideoDevice(
+        undefined,
+        nfceVideoRef.current,
+        (result, _error, scannerControls) => {
+          if (!result) return;
+          setNfceRaw(result.getText());
+          scannerControls.stop();
+          nfceScannerControlsRef.current = null;
+          setIsNfceScanning(false);
+          toast.success("QR Code lido. Confira os dados da NFC-e.");
+        },
+      );
+      nfceScannerControlsRef.current = controls;
+      setIsNfceScanning(true);
+    } catch (error) {
+      setIsNfceScanning(false);
+      setErrorMsg(error instanceof Error ? "Não foi possível acessar a câmera: " + error.message : "Não foi possível acessar a câmera. Verifique as permissões do navegador.");
+    }
+  };
+
+  const stopNfceCamera = () => {
+    nfceScannerControlsRef.current?.stop();
+    nfceScannerControlsRef.current = null;
+    setIsNfceScanning(false);
   };
 
   const handleParseNfce = () => {
@@ -213,6 +297,7 @@ export const QuickEntryModal: React.FC = () => {
         const parsed = fuelingSchema.safeParse({
           vehicleId,
           driverId: driverId || undefined,
+          tripId: selectedTripId || undefined,
           date,
           odometer: fuelOdometer,
           fuelType,
@@ -221,15 +306,27 @@ export const QuickEntryModal: React.FC = () => {
           totalCost: t,
           fullTank,
           stationName: stationName || undefined,
-          nfceKey: nfceRaw || undefined,
+          nfceKey: nfceRaw ? (parseNfceQrPayload(nfceRaw)?.nfceKey ?? nfceRaw) : undefined,
           notes: fuelNotes || undefined,
         });
         if (!parsed.success) {
           setErrorMsg(parsed.error.issues[0]?.message ?? "Dados do abastecimento inválidos.");
           return;
         }
-        await addFueling(parsed.data);
-        toast.success("Abastecimento salvo na garagem.");
+        try {
+          await addFueling(parsed.data);
+          toast.success("Abastecimento salvo na garagem.");
+        } catch (writeError) {
+          const userId = user?.uid;
+          const key = parsed.data.nfceKey?.replace(/\D/g, "") ?? "";
+          if (!navigator.onLine && userId && key.length === 44) {
+            const queued = enqueueGarageOfflineFueling(userId, { ...parsed.data, nfceKey: key });
+            if (!queued.ok) throw new Error("Sem conexão: não foi possível armazenar o abastecimento com segurança. Tente novamente.");
+            toast.warning("Abastecimento guardado offline. Será sincronizado quando a conexão voltar.");
+          } else {
+            throw writeError;
+          }
+        }
       } else if (quickEntryKind === "manutencao") {
         const parts = Number(partsCost) || 0;
         const labor = Number(laborCost) || 0;
@@ -261,6 +358,7 @@ export const QuickEntryModal: React.FC = () => {
         const parsed = personalExpenseSchema.safeParse({
           vehicleId,
           driverId: driverId || undefined,
+          tripId: selectedTripId || undefined,
           category: expCategory,
           date,
           amount: expAmount,
@@ -279,6 +377,7 @@ export const QuickEntryModal: React.FC = () => {
           vehicleId,
           driverId: suggestedDriver,
           date,
+          time: fineTime || undefined,
           infractionCode,
           description: fineDescription,
           location: fineLocation || undefined,
@@ -294,6 +393,10 @@ export const QuickEntryModal: React.FC = () => {
         await addFine(parsed.data);
         toast.success("Multa registrada.");
       } else if (quickEntryKind === "percurso") {
+        if (routeStatus === "CONCLUIDA" && routeChecklist.length !== ROUTE_PRE_CLOSE_ITEMS.length) {
+          setErrorMsg("Confira todos os itens da revisão antes de concluir o percurso.");
+          return;
+        }
         const parsed = routeTripSchema.safeParse({
           vehicleId,
           driverId: driverId || undefined,
@@ -301,7 +404,9 @@ export const QuickEntryModal: React.FC = () => {
           origin,
           destination,
           startOdometer,
-          endOdometer,
+          endOdometer: endOdometer === "" ? undefined : endOdometer,
+          status: routeStatus,
+          tripId: routeTripId || undefined,
           estimatedKm: estimatedKm ? Number(estimatedKm) : undefined,
           purpose: purpose || undefined,
         });
@@ -435,6 +540,14 @@ export const QuickEntryModal: React.FC = () => {
 
           {quickEntryKind === "abastecimento" && (
             <div className="space-y-3.5">
+              <div className="rounded-lg border border-[#dce2e6] bg-[#f7f8fa] p-3">
+                <label className="mb-1 block text-xs font-semibold text-[#52616a]">Vincular a uma viagem (opcional)</label>
+                <select value={selectedTripId} onChange={(e) => setSelectedTripId(e.target.value)} className="h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs">
+                  <option value="">Sem vínculo — atribuição por período</option>
+                  {orionState.trips.map((trip) => <option key={trip.id} value={trip.id}>{trip.destination} · {trip.startDate} a {trip.endDate}</option>)}
+                </select>
+                <p className="mt-1 text-[10px] text-[#52616a]">Vinculado, o relatório atribui este lançamento diretamente à viagem.</p>
+              </div>
               <div className="rounded-xl border border-[#dce2e6] bg-[#f7f8fa] p-3">
                 <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-[#173d4a]">
                   <QrCode className="size-3.5" /> Extrair de Link NFC-e ou Chave (44 dígitos)
@@ -448,10 +561,24 @@ export const QuickEntryModal: React.FC = () => {
                   />
                   <button
                     type="button"
+                    onClick={() => void startNfceCamera()}
+                    disabled={isNfceScanning}
+                    className="h-8 rounded-lg border border-[#b99555] px-3 text-xs font-semibold text-[#8a672e] hover:bg-[#b99555] hover:text-white disabled:opacity-50"
+                  >
+                    {isNfceScanning ? "Câmera ativa" : "Abrir câmera"}
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleParseNfce}
                     className="h-8 rounded-lg border border-[#173d4a] px-3 text-xs font-semibold text-[#173d4a] hover:bg-[#173d4a] hover:text-white"
                   >
                     Ler NFC-e
+                  </button>
+                </div>
+                <div className={isNfceScanning ? "mt-3 space-y-2" : "absolute left-[-9999px] top-0 h-px w-px overflow-hidden opacity-0"}>
+                  <video ref={nfceVideoRef} className="max-h-56 w-full rounded-lg bg-black object-contain" muted playsInline />
+                  <button type="button" onClick={stopNfceCamera} className="h-8 rounded-lg border border-[#cbd3d8] px-3 text-xs font-semibold text-[#52616a]">
+                    Fechar câmera
                   </button>
                 </div>
               </div>
@@ -670,6 +797,14 @@ export const QuickEntryModal: React.FC = () => {
 
           {quickEntryKind === "gasto" && (
             <div className="space-y-3.5">
+              <div className="rounded-lg border border-[#dce2e6] bg-[#f7f8fa] p-3">
+                <label className="mb-1 block text-xs font-semibold text-[#52616a]">Vincular a uma viagem (opcional)</label>
+                <select value={selectedTripId} onChange={(e) => setSelectedTripId(e.target.value)} className="h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs">
+                  <option value="">Sem vínculo — atribuição por período</option>
+                  {orionState.trips.map((trip) => <option key={trip.id} value={trip.id}>{trip.destination} · {trip.startDate} a {trip.endDate}</option>)}
+                </select>
+                <p className="mt-1 text-[10px] text-[#52616a]">Vinculado, o relatório atribui este lançamento diretamente à viagem.</p>
+              </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-[#52616a]">
@@ -717,7 +852,34 @@ export const QuickEntryModal: React.FC = () => {
             </div>
           )}
 
-          {quickEntryKind === "multa" && (
+                        <section className="rounded-xl border border-[#dce2e6] bg-[#f7f8fa] p-3.5 space-y-2">
+                <div className="text-xs font-semibold text-[#173d4a]">Preenchimento assistido da notificação</div>
+                <p className="text-[11px] text-[#52616a]">Cole o texto copiado da notificação ou do OCR externo. A extração local é parcial; confira código, data, valor e pontos na própria notificação antes de salvar.</p>
+                <textarea value={fineNoticeText} onChange={(e) => { setFineNoticeText(e.target.value); setFineNoticeExtract(null); }} rows={3} placeholder="Cole aqui o texto da notificação de infração…" className="w-full rounded-lg border border-[#cbd3d8] bg-white p-2.5 text-xs" />
+                <button type="button" disabled={!fineNoticeText.trim()} onClick={() => setFineNoticeExtract(parseFineNoticeText(fineNoticeText))} className="rounded-lg border border-[#cbd3d8] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-50">Identificar dados</button>
+                {fineNoticeExtract && (
+                  <div className="rounded-lg border border-[#dce2e6] bg-white p-3 space-y-1 text-xs">
+                    <div className="font-semibold">Dados encontrados para revisão</div>
+                    <div>Código: {fineNoticeExtract.infractionCode ?? "não identificado"}</div>
+                    <div>Data: {fineNoticeExtract.date ?? "não identificada"} · Hora: {fineNoticeExtract.time ?? "—"}</div>
+                    <div>Pontos: {fineNoticeExtract.points ?? "—"} · Valor: {fineNoticeExtract.amount ? formatReaisBRL(fineNoticeExtract.amount) : "—"}</div>
+                    <div>Local: {fineNoticeExtract.location ?? "não identificado"}</div>
+                    <div>Descrição: {fineNoticeExtract.description ?? "não identificada"}</div>
+                    <button type="button" onClick={() => {
+                      if (fineNoticeExtract.infractionCode) setInfractionCode(fineNoticeExtract.infractionCode);
+                      if (fineNoticeExtract.date) setDate(fineNoticeExtract.date);
+                      if (fineNoticeExtract.time) setFineTime(fineNoticeExtract.time);
+                      if (fineNoticeExtract.points) setFinePoints(String(fineNoticeExtract.points));
+                      if (fineNoticeExtract.amount) setFineAmount(String(fineNoticeExtract.amount));
+                      if (fineNoticeExtract.location) setFineLocation(fineNoticeExtract.location);
+                      if (fineNoticeExtract.description) setFineDescription(fineNoticeExtract.description);
+                      toast.success("Dados aplicados. Confira o formulário antes de registrar.");
+                    }} className="mt-1 rounded-lg bg-[#173d4a] px-3 py-1.5 text-xs font-semibold text-white">Aplicar campos identificados</button>
+                  </div>
+                )}
+              </section>
+
+{quickEntryKind === "multa" && (
             <div className="space-y-3.5">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
@@ -793,6 +955,11 @@ export const QuickEntryModal: React.FC = () => {
               </div>
 
               <div>
+                <label className="mb-1 block text-xs font-semibold text-[#52616a]">Hora da infração</label>
+                <input type="time" value={fineTime} onChange={(e) => setFineTime(e.target.value)} className="h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs" />
+              </div>
+
+              <div>
                 <label className="mb-1 block text-xs font-semibold text-[#52616a]">Local</label>
                 <input
                   value={fineLocation}
@@ -845,44 +1012,76 @@ export const QuickEntryModal: React.FC = () => {
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">
-                    Km Inicial *
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={startOdometer}
-                    onChange={(e) => setStartOdometer(e.target.value)}
-                    className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs"
-                    required
-                  />
+                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">Situação do percurso *</label>
+                  <select value={routeStatus} onChange={(e) => setRouteStatus(e.target.value as typeof routeStatus)} className="h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs">
+                    <option value="PLANEJADA">Planejada</option>
+                    <option value="EM_ANDAMENTO">Em andamento</option>
+                    <option value="CONCLUIDA">Concluída</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">
-                    Km Final *
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={endOdometer}
-                    onChange={(e) => setEndOdometer(e.target.value)}
-                    className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs"
-                    required
-                  />
+                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">Km Inicial *</label>
+                  <input type="number" min={0} value={startOdometer} onChange={(e) => setStartOdometer(e.target.value)} className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs" required />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">
-                    Km Estimado (GPS)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={estimatedKm}
-                    onChange={(e) => setEstimatedKm(e.target.value)}
-                    placeholder="Opcional"
-                    className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs"
-                  />
+                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">Km Estimado (GPS)</label>
+                  <input type="number" min={0} value={estimatedKm} onChange={(e) => setEstimatedKm(e.target.value)} placeholder="Opcional" className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs" />
                 </div>
+              </div>
+              {routeStatus === "CONCLUIDA" && (
+                <div className="rounded-xl border border-[#dce2e6] bg-[#f7f8fa] p-3">
+                  <p className="mb-2 text-xs font-semibold text-[#173d4a]">
+                    Revisão antes de encerrar o percurso
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {ROUTE_PRE_CLOSE_ITEMS.map((item) => (
+                      <label key={item} className="flex items-start gap-2 text-[11px] text-[#52616a]">
+                        <input
+                          type="checkbox"
+                          checked={routeChecklist.includes(item)}
+                          onChange={(e) => setRouteChecklist((current) =>
+                            e.target.checked ? [...current, item] : current.filter((value) => value !== item)
+                          )}
+                          className="mt-0.5 size-3.5 accent-[#173d4a]"
+                        />
+                        {item}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[10px] text-[#52616a]">
+                    Marque os quatro itens para liberar o encerramento.
+                  </p>
+                </div>
+              )}
+              {routeStatus === "CONCLUIDA" ? (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[#52616a]">Km Final *</label>
+                  <input type="number" min={0} value={endOdometer} onChange={(e) => setEndOdometer(e.target.value)} className="tabular-nums h-9 w-full rounded-lg border border-[#cbd3d8] px-3 text-xs" required />
+                  <p className="mt-1 text-[10px] text-[#52616a]">Informe a quilometragem final para concluir e atualizar o hodômetro do veículo.</p>
+                </div>
+              ) : (
+                <p className="rounded-lg bg-[#f7f8fa] px-3 py-2 text-[11px] text-[#52616a]">O hodômetro final poderá ser informado quando o percurso for concluído.</p>
+              )}
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#52616a]">
+                  Vincular à viagem planejada
+                </label>
+                <select
+                  value={routeTripId}
+                  onChange={(e) => setRouteTripId(e.target.value)}
+                  className="h-9 w-full rounded-lg border border-[#cbd3d8] bg-white px-2.5 text-xs"
+                >
+                  <option value="">Não vincular</option>
+                  {orionState.trips.filter((trip) => trip.status !== "Concluída").map((trip) => (
+                    <option key={trip.id} value={trip.id}>
+                      {trip.destination} · {trip.startDate}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[10px] text-[#52616a]">
+                  Associa este percurso a uma viagem do Planejamento de Viagens.
+                </p>
               </div>
 
               <div>

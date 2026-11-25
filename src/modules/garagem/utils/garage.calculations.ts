@@ -296,10 +296,12 @@ export function computeGarageKpis(
 
   fuelings.forEach((f) => pushOdometer(f.vehicleId, f.odometer));
   maintenances.forEach((m) => pushOdometer(m.vehicleId, m.odometer));
-  routes.forEach((r) => {
-    pushOdometer(r.vehicleId, r.startOdometer);
-    pushOdometer(r.vehicleId, r.endOdometer);
-  });
+  routes
+    .filter((r) => (r.status ?? "CONCLUIDA") === "CONCLUIDA" && r.endOdometer !== undefined)
+    .forEach((r) => {
+      pushOdometer(r.vehicleId, r.startOdometer);
+      pushOdometer(r.vehicleId, r.endOdometer!);
+    });
 
   let totalDistanceKm = 0;
   for (const [, odos] of odometersByVehicle.entries()) {
@@ -376,9 +378,11 @@ export function computeVehicleTcoSummary(
       const odos: number[] = [];
       vFuel.forEach((f) => odos.push(f.odometer));
       vMaint.forEach((m) => odos.push(m.odometer));
-      vRoutes.forEach((r) => {
-        odos.push(r.startOdometer, r.endOdometer);
-      });
+      vRoutes
+        .filter((r) => (r.status ?? "CONCLUIDA") === "CONCLUIDA" && r.endOdometer !== undefined)
+        .forEach((r) => {
+          odos.push(r.startOdometer, r.endOdometer!);
+        });
 
       let distanceKm = odos.length >= 2 ? Math.max(...odos) - Math.min(...odos) : 0;
       if (distanceKm === 0 && vRoutes.length > 0) {
@@ -585,7 +589,7 @@ export function buildUnifiedTimeline(
         kind: "PERCURSO",
         title: `${r.origin} → ${r.destination}`,
         subtitle: `${formatNumberBR(r.distanceKm, 0)} km percorridos`,
-        odometer: r.endOdometer,
+        odometer: r.endOdometer ?? r.startOdometer,
       });
     });
 
@@ -685,37 +689,53 @@ export function parseNfceQrPayload(rawInput: string): ParsedNfceData | null {
   const text = rawInput.trim();
   if (!text) return null;
 
+  const keyPattern = /(?:^|[^0-9])(\d{44})(?:[^0-9]|$)/;
+  const candidates: string[] = [text];
+  let params: URLSearchParams | undefined;
+
   try {
-    if (text.includes("?") || text.includes("=")) {
-      const queryPart = text.includes("?") ? text.split("?")[1] : text;
-      const params = new URLSearchParams(queryPart);
-      const pParam = params.get("p") ?? "";
-      const keyMatch = (pParam || text).match(/\b\d{44}\b/);
-      const vNfRaw = params.get("vNF") ?? params.get("valor") ?? params.get("v");
-      const dateRaw = params.get("dhEmi") ?? params.get("data");
-      const stationRaw = params.get("xNome") ?? params.get("posto");
-
-      const totalCost = vNfRaw ? Number(vNfRaw.replace(",", ".")) : undefined;
-      const dateMatch = dateRaw?.match(/\d{4}-\d{2}-\d{2}/);
-
-      if (keyMatch || (totalCost && !Number.isNaN(totalCost))) {
-        return {
-          nfceKey: keyMatch ? keyMatch[0] : pParam.split("|")[0] || text.slice(0, 44),
-          totalCost: totalCost && totalCost > 0 ? totalCost : undefined,
-          date: dateMatch ? dateMatch[0] : undefined,
-          stationName: stationRaw ? decodeURIComponent(stationRaw) : undefined,
-        };
-      }
-    }
+    const parsedUrl = new URL(text);
+    params = parsedUrl.searchParams;
   } catch {
-    // Fallback regex
+    const query = text.includes("?") ? text.slice(text.indexOf("?") + 1) : text;
+    if (query.includes("=")) params = new URLSearchParams(query.split("#")[0]);
   }
 
-  const directKey = text.match(/\b\d{44}\b/);
-  if (directKey) {
-    return { nfceKey: directKey[0] };
+  if (params) {
+    const normalized = new Map<string, string>();
+    params.forEach((value, key) => normalized.set(key.toLowerCase(), value));
+    const pPayload = normalized.get("p");
+    const explicitKey =
+      normalized.get("chnfe") ??
+      normalized.get("chave") ??
+      normalized.get("chaveacesso") ??
+      normalized.get("chave_acesso");
+    if (pPayload) candidates.unshift(pPayload);
+    if (explicitKey) candidates.unshift(explicitKey);
+
+    const keyMatch = candidates.map((value) => value.match(keyPattern)).find(Boolean);
+    const valueRaw =
+      normalized.get("vnf") ?? normalized.get("valor") ?? normalized.get("v");
+    const parsedValue = valueRaw
+      ? Number(valueRaw.trim().replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", "."))
+      : NaN;
+    const dateRaw = normalized.get("dhemi") ?? normalized.get("data");
+    const isoDate = dateRaw?.match(/\d{4}-\d{2}-\d{2}/)?.[0];
+    const brDate = dateRaw?.match(/\b(\d{2})\/(\d{2})\/(\d{4})\b/);
+    const stationName = normalized.get("xnome") ?? normalized.get("posto");
+
+    if (keyMatch) {
+      return {
+        nfceKey: keyMatch[1],
+        totalCost: Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : undefined,
+        date: isoDate ?? (brDate ? `${brDate[3]}-${brDate[2]}-${brDate[1]}` : undefined),
+        stationName: stationName?.trim() || undefined,
+      };
+    }
   }
 
+  const directKey = text.match(keyPattern);
+  if (directKey) return { nfceKey: directKey[1] };
   return null;
 }
 
@@ -743,6 +763,7 @@ export function computeRouteAudit(route: RouteTrip): {
   deltaPercent: number;
   flagged: boolean;
 } | null {
+  if ((route.status && route.status !== "CONCLUIDA") || route.endOdometer === undefined) return null;
   if (!route.estimatedKm || route.estimatedKm <= 0) return null;
   const deltaKm = Number((route.distanceKm - route.estimatedKm).toFixed(1));
   const deltaPercent = Number(((deltaKm / route.estimatedKm) * 100).toFixed(1));
