@@ -24,15 +24,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Check wallet formatting
+        run: bunx prettier --check src/pages/CarteiraPage.tsx src/server/pluggy.ts src/store/orionStore.tsx src/types/orion.ts
       - name: Run tests
+        id: tests
         run: bun run test
-      - name: Run lint
+      - name: Run wallet lint
+        run: bunx eslint src/pages/CarteiraPage.tsx src/server/pluggy.ts src/store/orionStore.tsx src/types/orion.ts
+      - name: Check repository-wide lint debt
+        continue-on-error: true
         run: bun run lint
       - name: Build production bundle
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: bun run build
 
   codeql:

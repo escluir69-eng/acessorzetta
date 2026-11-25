@@ -17,12 +17,16 @@ import {
   writeBatch,
   type DocumentData,
 } from "@/lib/firebase";
-import { auth, db, storage, googleProvider, handleFirestoreError, OperationType } from "@/lib/firebase";
-import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from "@/lib/firebase";
 import {
-  OrionContext,
-  type OrionContextValue,
-} from "@/store/orionContext";
+  auth,
+  db,
+  storage,
+  googleProvider,
+  handleFirestoreError,
+  OperationType,
+} from "@/lib/firebase";
+import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from "@/lib/firebase";
+import { OrionContext, type OrionContextValue } from "@/store/orionContext";
 import {
   buildArchiveFolderPath,
   classifyArchiveCategory,
@@ -86,12 +90,13 @@ import {
   type WalletTransaction,
 } from "@/types/orion";
 import type { PlannedDocWrite } from "@/lib/domain/orionImporter";
-import {
-  buildYearSnapshotPayload,
-  collectAllExpenseYears,
-} from "@/lib/domain/expenseAnalytics";
+import { buildYearSnapshotPayload, collectAllExpenseYears } from "@/lib/domain/expenseAnalytics";
 import { derivedContractStatus } from "@/lib/domain/contracts";
-import { resolveActivePaymentEvents, resolveActiveRevenueEvents, validIsoDate } from "@/lib/domain/ledgerHistory";
+import {
+  resolveActivePaymentEvents,
+  resolveActiveRevenueEvents,
+  validIsoDate,
+} from "@/lib/domain/ledgerHistory";
 import { clampDueDate, todayBR } from "@/lib/domain/money";
 import { GENERIC_PAYMENT_DATE, planGenericPaymentDateRepair } from "@/lib/domain/paymentDateRepair";
 
@@ -131,7 +136,10 @@ function sanitizeAttachments(list?: PaymentAttachmentRef[] | unknown): PaymentAt
         id,
         fileName: clampStr(item.fileName || "comprovante", 160),
         mimeType: clampStr(item.mimeType || "application/octet-stream", 80),
-        sizeBytes: typeof item.sizeBytes === "number" && item.sizeBytes >= 0 ? Math.trunc(item.sizeBytes) : undefined,
+        sizeBytes:
+          typeof item.sizeBytes === "number" && item.sizeBytes >= 0
+            ? Math.trunc(item.sizeBytes)
+            : undefined,
         storagePath: item.storagePath ? clampStr(item.storagePath, 400) : undefined,
         documentUrl: item.documentUrl ? clampStr(item.documentUrl, 1000) : undefined,
         uploadedAt: clampStr(item.uploadedAt || new Date().toISOString(), 40),
@@ -490,6 +498,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           number: String(d["number"] ?? ""),
           balanceCents: Number(d["balanceCents"] ?? 0),
           color: String(d["color"] ?? "#173d4a"),
+          isHidden: Boolean(d["isHidden"] ?? false),
           ...(typeof d["sourceRecordId"] === "string"
             ? { sourceRecordId: d["sourceRecordId"] }
             : {}),
@@ -509,8 +518,12 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           availableCents: Number(d["availableCents"] ?? 0),
           closingDay: Number(d["closingDay"] ?? 15),
           dueDay: Number(d["dueDay"] ?? 25),
-          ...(typeof d["manualLimitCents"] === "number" ? { manualLimitCents: d["manualLimitCents"] } : {}),
-          ...(typeof d["manualUsedCents"] === "number" ? { manualUsedCents: d["manualUsedCents"] } : {}),
+          ...(typeof d["manualLimitCents"] === "number"
+            ? { manualLimitCents: d["manualLimitCents"] }
+            : {}),
+          ...(typeof d["manualUsedCents"] === "number"
+            ? { manualUsedCents: d["manualUsedCents"] }
+            : {}),
           ...(typeof d["linkedAnnualExpenseId"] === "string"
             ? { linkedAnnualExpenseId: d["linkedAnnualExpenseId"] }
             : {}),
@@ -535,8 +548,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           invoiceCents: typeof d["invoiceCents"] === "number" ? d["invoiceCents"] : null,
           providerInvoiceId:
             typeof d["providerInvoiceId"] === "string" ? d["providerInvoiceId"] : null,
-          totalLimitCents:
-            typeof d["totalLimitCents"] === "number" ? d["totalLimitCents"] : null,
+          totalLimitCents: typeof d["totalLimitCents"] === "number" ? d["totalLimitCents"] : null,
           availableLimitCents:
             typeof d["availableLimitCents"] === "number" ? d["availableLimitCents"] : null,
           usedLimitCents: typeof d["usedLimitCents"] === "number" ? d["usedLimitCents"] : null,
@@ -568,6 +580,21 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           amountCents: Number(d["amountCents"] ?? 0),
           date: String(d["date"] ?? ""),
           category: String(d["category"] ?? ""),
+          ...(typeof d["status"] === "string" ? { status: d["status"] } : {}),
+          ...(typeof d["installmentNumber"] === "number"
+            ? { installmentNumber: d["installmentNumber"] }
+            : {}),
+          ...(typeof d["totalInstallments"] === "number"
+            ? { totalInstallments: d["totalInstallments"] }
+            : {}),
+          ...(typeof d["totalAmountCents"] === "number"
+            ? { totalAmountCents: d["totalAmountCents"] }
+            : {}),
+          ...(typeof d["purchaseDate"] === "string" ? { purchaseDate: d["purchaseDate"] } : {}),
+          ...(typeof d["billId"] === "string" ? { billId: d["billId"] } : {}),
+          ...(typeof d["purchaseGroupId"] === "string"
+            ? { purchaseGroupId: d["purchaseGroupId"] }
+            : {}),
           ...(typeof d["reconciledEventId"] === "string" || d["reconciledEventId"] === null
             ? { reconciledEventId: d["reconciledEventId"] as string | null }
             : {}),
@@ -616,7 +643,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           downPaymentCents: Number(d["downPaymentCents"] ?? 0),
           interestPercent: Number(d["interestPercent"] ?? 0),
           finePercent: Number(d["finePercent"] ?? 0),
-          correctionIndex: (d["correctionIndex"] as RevenueContract["correctionIndex"]) ?? "Sem correção",
+          correctionIndex:
+            (d["correctionIndex"] as RevenueContract["correctionIndex"]) ?? "Sem correção",
           ...(typeof d["customRatePercent"] === "number"
             ? { customRatePercent: d["customRatePercent"] }
             : {}),
@@ -781,7 +809,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           setState((prev) => ({
             ...prev,
             annualExpenses: [...annualExpenses].sort(
-              (a, b) => (a.position ?? 999) - (b.position ?? 999) || a.creditor.localeCompare(b.creditor),
+              (a, b) =>
+                (a.position ?? 999) - (b.position ?? 999) || a.creditor.localeCompare(b.creditor),
             ),
           })),
       );
@@ -799,7 +828,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           paidDate: typeof d["paidDate"] === "string" ? d["paidDate"] : null,
           paidCents: typeof d["paidCents"] === "number" ? d["paidCents"] : null,
           isSettled: Boolean(d["isSettled"]),
-          ...(typeof d["sourceAnnualId"] === "string" ? { sourceAnnualId: d["sourceAnnualId"] } : {}),
+          ...(typeof d["sourceAnnualId"] === "string"
+            ? { sourceAnnualId: d["sourceAnnualId"] }
+            : {}),
           ...(typeof d["contractId"] === "string" || d["contractId"] === null
             ? { contractId: d["contractId"] as string | null }
             : {}),
@@ -1024,13 +1055,23 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           sourceId: String(d["sourceId"] ?? ""),
           occurrenceDate: String(d["occurrenceDate"] ?? ""),
           action: (d["action"] as AgendaEventOverride["action"]) ?? "modified",
-          ...(typeof d["postponedToDate"] === "string" ? { postponedToDate: d["postponedToDate"] } : {}),
-          ...(typeof d["postponedToTime"] === "string" ? { postponedToTime: d["postponedToTime"] } : {}),
+          ...(typeof d["postponedToDate"] === "string"
+            ? { postponedToDate: d["postponedToDate"] }
+            : {}),
+          ...(typeof d["postponedToTime"] === "string"
+            ? { postponedToTime: d["postponedToTime"] }
+            : {}),
           ...(typeof d["overrideTitle"] === "string" ? { overrideTitle: d["overrideTitle"] } : {}),
           ...(typeof d["overrideTime"] === "string" ? { overrideTime: d["overrideTime"] } : {}),
-          ...(typeof d["overrideEndTime"] === "string" ? { overrideEndTime: d["overrideEndTime"] } : {}),
-          ...(typeof d["overrideBreakRule"] === "string" ? { overrideBreakRule: d["overrideBreakRule"] } : {}),
-          ...(typeof d["overrideCompany"] === "string" ? { overrideCompany: d["overrideCompany"] } : {}),
+          ...(typeof d["overrideEndTime"] === "string"
+            ? { overrideEndTime: d["overrideEndTime"] }
+            : {}),
+          ...(typeof d["overrideBreakRule"] === "string"
+            ? { overrideBreakRule: d["overrideBreakRule"] }
+            : {}),
+          ...(typeof d["overrideCompany"] === "string"
+            ? { overrideCompany: d["overrideCompany"] }
+            : {}),
           ...(typeof d["overrideDescription"] === "string"
             ? { overrideDescription: d["overrideDescription"] }
             : {}),
@@ -1052,7 +1093,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         (contactCategories) =>
           setState((prev) => ({
             ...prev,
-            contactCategories: [...contactCategories].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name)),
+            contactCategories: [...contactCategories].sort(
+              (a, b) => a.order - b.order || a.name.localeCompare(b.name),
+            ),
           })),
       );
 
@@ -1068,7 +1111,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         (contactSubcategories) =>
           setState((prev) => ({
             ...prev,
-            contactSubcategories: [...contactSubcategories].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name)),
+            contactSubcategories: [...contactSubcategories].sort(
+              (a, b) => a.order - b.order || a.name.localeCompare(b.name),
+            ),
           })),
       );
 
@@ -1086,7 +1131,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           categoryId: String(d["categoryId"] ?? "cat-familia"),
           ...(typeof d["subcategoryId"] === "string" ? { subcategoryId: d["subcategoryId"] } : {}),
           ...(typeof d["categoryColor"] === "string" ? { categoryColor: d["categoryColor"] } : {}),
-          ...(typeof d["subcategoryColor"] === "string" ? { subcategoryColor: d["subcategoryColor"] } : {}),
+          ...(typeof d["subcategoryColor"] === "string"
+            ? { subcategoryColor: d["subcategoryColor"] }
+            : {}),
           ...(typeof d["relationship"] === "string" ? { relationship: d["relationship"] } : {}),
           ...(typeof d["company"] === "string" ? { company: d["company"] } : {}),
           ...(typeof d["profession"] === "string" ? { profession: d["profession"] } : {}),
@@ -1102,7 +1149,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         (agendaContacts) =>
           setState((prev) => ({
             ...prev,
-            agendaContacts: [...agendaContacts].sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+            agendaContacts: [...agendaContacts].sort((a, b) =>
+              a.name.localeCompare(b.name, "pt-BR"),
+            ),
           })),
       );
 
@@ -1119,7 +1168,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           soundTone: (d["soundTone"] as AgendaAlarm["soundTone"]) ?? "chime",
           enabled: Boolean(d["enabled"] ?? true),
           snoozeUntilIso: typeof d["snoozeUntilIso"] === "string" ? d["snoozeUntilIso"] : null,
-          lastTriggeredKey: typeof d["lastTriggeredKey"] === "string" ? d["lastTriggeredKey"] : null,
+          lastTriggeredKey:
+            typeof d["lastTriggeredKey"] === "string" ? d["lastTriggeredKey"] : null,
         }),
         (agendaAlarms) =>
           setState((prev) => ({
@@ -1148,7 +1198,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         (agendaNotes) =>
           setState((prev) => ({
             ...prev,
-            agendaNotes: [...agendaNotes].sort((a, b) => b.updatedAtIso.localeCompare(a.updatedAtIso)),
+            agendaNotes: [...agendaNotes].sort((a, b) =>
+              b.updatedAtIso.localeCompare(a.updatedAtIso),
+            ),
           })),
       );
 
@@ -1373,9 +1425,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           ...(typeof d["policyOrCode"] === "string" ? { policyOrCode: d["policyOrCode"] } : {}),
           status: (d["status"] as GarageDocument["status"]) ?? "PENDENTE",
           ...(typeof d["paidAt"] === "string" ? { paidAt: d["paidAt"] } : {}),
-          ...(typeof d["autoGenerated"] === "boolean"
-            ? { autoGenerated: d["autoGenerated"] }
-            : {}),
+          ...(typeof d["autoGenerated"] === "boolean" ? { autoGenerated: d["autoGenerated"] } : {}),
           ...(typeof d["notes"] === "string" ? { notes: d["notes"] } : {}),
         }),
         (garageDocuments) =>
@@ -1425,12 +1475,18 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           distanceKm: Number(d["distanceKm"] ?? 0),
           ...(typeof d["estimatedKm"] === "number" ? { estimatedKm: d["estimatedKm"] } : {}),
           ...(typeof d["purpose"] === "string" ? { purpose: d["purpose"] } : {}),
-          ...(d["status"] === "PLANEJADA" || d["status"] === "EM_ANDAMENTO" || d["status"] === "CONCLUIDA"
+          ...(d["status"] === "PLANEJADA" ||
+          d["status"] === "EM_ANDAMENTO" ||
+          d["status"] === "CONCLUIDA"
             ? { status: d["status"] as GarageRoute["status"] }
             : {}),
           ...(typeof d["tripId"] === "string" ? { tripId: d["tripId"] } : {}),
           ...(Array.isArray(d["completionChecklist"])
-            ? { completionChecklist: d["completionChecklist"].filter((item): item is string => typeof item === "string").slice(0, 4) }
+            ? {
+                completionChecklist: d["completionChecklist"]
+                  .filter((item): item is string => typeof item === "string")
+                  .slice(0, 4),
+              }
             : {}),
         }),
         (garageRoutes) =>
@@ -1494,10 +1550,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         (id, d) => ({
           id,
           ownerId: typeof d["ownerId"] === "string" ? d["ownerId"] : uidPath,
-          kind:
-            d["kind"] === "mercado" || d["kind"] === "aquisicoes"
-              ? d["kind"]
-              : "geral",
+          kind: d["kind"] === "mercado" || d["kind"] === "aquisicoes" ? d["kind"] : "geral",
           ...(typeof d["docType"] === "string"
             ? { docType: d["docType"] as FiscalReceipt["docType"] }
             : {}),
@@ -1513,9 +1566,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           number: String(d["number"] ?? ""),
           series: String(d["series"] ?? ""),
           paymentMethod: String(d["paymentMethod"] ?? ""),
-          ...(typeof d["discountCents"] === "number"
-            ? { discountCents: d["discountCents"] }
-            : {}),
+          ...(typeof d["discountCents"] === "number" ? { discountCents: d["discountCents"] } : {}),
           totalCents: Number(d["totalCents"] ?? 0),
           items: Array.isArray(d["items"]) ? (d["items"] as FiscalReceipt["items"]) : [],
           ...(typeof d["archiveCategory"] === "string"
@@ -1876,7 +1927,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     try {
       await batch.commit();
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, `users/${ownerId}/revenueSources/${sourceId}`);
+      handleFirestoreError(
+        err,
+        OperationType.CREATE,
+        `users/${ownerId}/revenueSources/${sourceId}`,
+      );
     }
   };
 
@@ -1913,7 +1968,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         if (!entrySnap.exists()) throw new Error("Lançamento de receita não encontrado.");
         const ed = entrySnap.data() as DocumentData;
         const contractId = typeof ed["contractId"] === "string" ? ed["contractId"] : null;
-        const contractRef = contractId ? doc(db, "users", ownerId, "revenueContracts", contractId) : null;
+        const contractRef = contractId
+          ? doc(db, "users", ownerId, "revenueContracts", contractId)
+          : null;
         const contractSnap = contractRef ? await tx.get(contractRef) : null;
         const bankRef =
           !bankTxId && chosenAccountId && cashNow > 0
@@ -1940,7 +1997,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           ...incomingAtts,
         ]);
         const finalNote =
-          note !== undefined ? clampStr(note, 300) : (typeof ed["note"] === "string" ? ed["note"] : "");
+          note !== undefined
+            ? clampStr(note, 300)
+            : typeof ed["note"] === "string"
+              ? ed["note"]
+              : "";
 
         tx.update(
           entryRef,
@@ -1950,9 +2011,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
             discountCents: totalDiscount > 0 ? totalDiscount : null,
             surchargeCents: totalSurcharge > 0 ? totalSurcharge : null,
             note: finalNote || undefined,
-            accountId: chosenAccountId ?? (typeof ed["accountId"] === "string" ? ed["accountId"] : null),
+            accountId:
+              chosenAccountId ?? (typeof ed["accountId"] === "string" ? ed["accountId"] : null),
             bankTransactionId:
-              bankTxId ?? (typeof ed["bankTransactionId"] === "string" ? ed["bankTransactionId"] : null),
+              bankTxId ??
+              (typeof ed["bankTransactionId"] === "string" ? ed["bankTransactionId"] : null),
             attachments: mergedAtts.length > 0 ? mergedAtts : undefined,
             updatedAt: serverTimestamp(),
           }),
@@ -2000,7 +2063,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
               downPaymentCents: Number(cd["downPaymentCents"] ?? 0),
               interestPercent: Number(cd["interestPercent"] ?? 0),
               finePercent: Number(cd["finePercent"] ?? 0),
-              correctionIndex: (cd["correctionIndex"] as RevenueContract["correctionIndex"]) ?? "Sem correção",
+              correctionIndex:
+                (cd["correctionIndex"] as RevenueContract["correctionIndex"]) ?? "Sem correção",
               status: (cd["status"] as RevenueContract["status"]) ?? "Em andamento",
               createdAt: String(cd["contractDate"] ?? ""),
             },
@@ -2022,7 +2086,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           discountCents: typeof ed["discountCents"] === "number" ? ed["discountCents"] : null,
           surchargeCents: typeof ed["surchargeCents"] === "number" ? ed["surchargeCents"] : null,
           accountId: typeof ed["accountId"] === "string" ? ed["accountId"] : null,
-          bankTransactionId: typeof ed["bankTransactionId"] === "string" ? ed["bankTransactionId"] : null,
+          bankTransactionId:
+            typeof ed["bankTransactionId"] === "string" ? ed["bankTransactionId"] : null,
           note: typeof ed["note"] === "string" ? ed["note"] : undefined,
         };
         const afterData: RevenueEventSnapshot = {
@@ -2096,23 +2161,26 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           : null;
         const targetEvSnap = targetEvRef ? await tx.get(targetEvRef) : null;
         const targetEvData = targetEvSnap?.exists() ? (targetEvSnap.data() as DocumentData) : null;
-        const targetAfter = (targetEvData?.["afterData"] as RevenueEventSnapshot | undefined) ?? undefined;
+        const targetAfter =
+          (targetEvData?.["afterData"] as RevenueEventSnapshot | undefined) ?? undefined;
 
         const oldEventCash = targetAfter?.receivedCents ?? Number(ed["receivedCents"] ?? 0);
         const oldAccountId =
           targetAfter?.accountId !== undefined
             ? targetAfter.accountId
-            : (typeof targetEvData?.["accountId"] === "string"
-                ? (targetEvData["accountId"] as string)
-                : (typeof ed["accountId"] === "string" ? (ed["accountId"] as string) : null));
+            : typeof targetEvData?.["accountId"] === "string"
+              ? (targetEvData["accountId"] as string)
+              : typeof ed["accountId"] === "string"
+                ? (ed["accountId"] as string)
+                : null;
         const oldBankTxId =
           targetAfter?.bankTransactionId !== undefined
             ? targetAfter.bankTransactionId
-            : (typeof targetEvData?.["bankTransactionId"] === "string"
-                ? (targetEvData["bankTransactionId"] as string)
-                : (typeof ed["bankTransactionId"] === "string"
-                    ? (ed["bankTransactionId"] as string)
-                    : null));
+            : typeof targetEvData?.["bankTransactionId"] === "string"
+              ? (targetEvData["bankTransactionId"] as string)
+              : typeof ed["bankTransactionId"] === "string"
+                ? (ed["bankTransactionId"] as string)
+                : null;
 
         const contractId = typeof ed["contractId"] === "string" ? ed["contractId"] : null;
         const contractSnap = contractId
@@ -2180,7 +2248,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         } else {
           if (oldBankSnap?.exists() && oldEventCash > 0) {
             tx.update(oldBankSnap.ref, {
-              balanceCents: Math.trunc(Number(oldBankSnap.data()["balanceCents"] ?? 0) - oldEventCash),
+              balanceCents: Math.trunc(
+                Number(oldBankSnap.data()["balanceCents"] ?? 0) - oldEventCash,
+              ),
               updatedAt: serverTimestamp(),
             });
           }
@@ -2227,7 +2297,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
               downPaymentCents: Number(cd["downPaymentCents"] ?? 0),
               interestPercent: Number(cd["interestPercent"] ?? 0),
               finePercent: Number(cd["finePercent"] ?? 0),
-              correctionIndex: (cd["correctionIndex"] as RevenueContract["correctionIndex"]) ?? "Sem correção",
+              correctionIndex:
+                (cd["correctionIndex"] as RevenueContract["correctionIndex"]) ?? "Sem correção",
               status: (cd["status"] as RevenueContract["status"]) ?? "Em andamento",
               createdAt: String(cd["contractDate"] ?? ""),
             },
@@ -2240,10 +2311,16 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         }
 
         const beforeData: RevenueEventSnapshot = {
-          receivedDate: targetAfter?.receivedDate ?? (typeof ed["receivedDate"] === "string" ? ed["receivedDate"] : null),
+          receivedDate:
+            targetAfter?.receivedDate ??
+            (typeof ed["receivedDate"] === "string" ? ed["receivedDate"] : null),
           receivedCents: oldEventCash,
-          discountCents: targetAfter?.discountCents ?? (typeof ed["discountCents"] === "number" ? ed["discountCents"] : null),
-          surchargeCents: targetAfter?.surchargeCents ?? (typeof ed["surchargeCents"] === "number" ? ed["surchargeCents"] : null),
+          discountCents:
+            targetAfter?.discountCents ??
+            (typeof ed["discountCents"] === "number" ? ed["discountCents"] : null),
+          surchargeCents:
+            targetAfter?.surchargeCents ??
+            (typeof ed["surchargeCents"] === "number" ? ed["surchargeCents"] : null),
           isSettled: targetAfter?.isSettled,
           accountId: oldAccountId,
           bankTransactionId: oldBankTxId,
@@ -2281,7 +2358,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         );
       });
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `users/${ownerId}/revenueEvents/${newEventId}`);
+      handleFirestoreError(
+        err,
+        OperationType.WRITE,
+        `users/${ownerId}/revenueEvents/${newEventId}`,
+      );
     } finally {
       if (idemKey) inFlightKeysRef.current.delete(idemKey);
     }
@@ -2309,17 +2390,22 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           : null;
         const targetEvSnap = targetEvRef ? await tx.get(targetEvRef) : null;
         const targetEvData = targetEvSnap?.exists() ? (targetEvSnap.data() as DocumentData) : null;
-        const targetAfter = (targetEvData?.["afterData"] as RevenueEventSnapshot | undefined) ?? undefined;
+        const targetAfter =
+          (targetEvData?.["afterData"] as RevenueEventSnapshot | undefined) ?? undefined;
 
         const oldCash = targetAfter?.receivedCents ?? Number(ed["receivedCents"] ?? 0);
         const oldAccountId =
           targetAfter?.accountId !== undefined
             ? targetAfter.accountId
-            : (typeof ed["accountId"] === "string" ? (ed["accountId"] as string) : null);
+            : typeof ed["accountId"] === "string"
+              ? (ed["accountId"] as string)
+              : null;
         const oldBankTxId =
           targetAfter?.bankTransactionId !== undefined
             ? targetAfter.bankTransactionId
-            : (typeof ed["bankTransactionId"] === "string" ? (ed["bankTransactionId"] as string) : null);
+            : typeof ed["bankTransactionId"] === "string"
+              ? (ed["bankTransactionId"] as string)
+              : null;
 
         const contractId = typeof ed["contractId"] === "string" ? ed["contractId"] : null;
         const contractSnap = contractId
@@ -2348,10 +2434,13 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           stripUndefined({
             receivedCents: remainingCash > 0 ? remainingCash : null,
             receivedDate: remainingCash > 0 ? nextReceivedDate : null,
-            discountCents: remainingCash > 0 ? (latestRemaining?.afterData?.discountCents ?? null) : null,
-            surchargeCents: remainingCash > 0 ? (latestRemaining?.afterData?.surchargeCents ?? null) : null,
+            discountCents:
+              remainingCash > 0 ? (latestRemaining?.afterData?.discountCents ?? null) : null,
+            surchargeCents:
+              remainingCash > 0 ? (latestRemaining?.afterData?.surchargeCents ?? null) : null,
             accountId: remainingCash > 0 ? (latestRemaining?.afterData?.accountId ?? null) : null,
-            bankTransactionId: remainingCash > 0 ? (latestRemaining?.afterData?.bankTransactionId ?? null) : null,
+            bankTransactionId:
+              remainingCash > 0 ? (latestRemaining?.afterData?.bankTransactionId ?? null) : null,
             updatedAt: serverTimestamp(),
           }),
         );
@@ -2393,7 +2482,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
               downPaymentCents: Number(cd["downPaymentCents"] ?? 0),
               interestPercent: Number(cd["interestPercent"] ?? 0),
               finePercent: Number(cd["finePercent"] ?? 0),
-              correctionIndex: (cd["correctionIndex"] as RevenueContract["correctionIndex"]) ?? "Sem correção",
+              correctionIndex:
+                (cd["correctionIndex"] as RevenueContract["correctionIndex"]) ?? "Sem correção",
               status: (cd["status"] as RevenueContract["status"]) ?? "Em andamento",
               createdAt: String(cd["contractDate"] ?? ""),
             },
@@ -2416,7 +2506,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
             targetEventId: input.revenueEventId ?? null,
             idempotencyKey: idemKey ? clampStr(idemKey, 128) : undefined,
             beforeData: {
-              receivedDate: targetAfter?.receivedDate ?? (typeof ed["receivedDate"] === "string" ? ed["receivedDate"] : null),
+              receivedDate:
+                targetAfter?.receivedDate ??
+                (typeof ed["receivedDate"] === "string" ? ed["receivedDate"] : null),
               receivedCents: oldCash,
               accountId: oldAccountId,
               bankTransactionId: oldBankTxId,
@@ -2432,7 +2524,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         );
       });
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `users/${ownerId}/revenueEvents/${revEventId}`);
+      handleFirestoreError(
+        err,
+        OperationType.WRITE,
+        `users/${ownerId}/revenueEvents/${revEventId}`,
+      );
     } finally {
       if (idemKey) inFlightKeysRef.current.delete(idemKey);
     }
@@ -2499,7 +2595,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     try {
       await batch.commit();
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, `users/${ownerId}/revenueContracts/${contractId}`);
+      handleFirestoreError(
+        err,
+        OperationType.CREATE,
+        `users/${ownerId}/revenueContracts/${contractId}`,
+      );
     }
   };
 
@@ -2541,26 +2641,28 @@ export function OrionProvider({ children }: { children: ReactNode }) {
       (b) => b.sourceAnnualId === rowId && b.period === period,
     );
     const primaryBill = linkedBillCandidates[0];
-    const linkedInst =
-      row.sourceContractId
+    const linkedInst = row.sourceContractId
+      ? state.payableInstallments.find(
+          (i) => i.contractId === row.sourceContractId && i.dueDate.slice(0, 7) === period,
+        )
+      : primaryBill?.contractId && primaryBill.installmentNumber != null
         ? state.payableInstallments.find(
-            (i) => i.contractId === row.sourceContractId && i.dueDate.slice(0, 7) === period,
+            (i) =>
+              i.contractId === primaryBill.contractId && i.number === primaryBill.installmentNumber,
           )
-        : primaryBill?.contractId && primaryBill.installmentNumber != null
-          ? state.payableInstallments.find(
-              (i) =>
-                i.contractId === primaryBill.contractId &&
-                i.number === primaryBill.installmentNumber,
-            )
-          : undefined;
+        : undefined;
 
     const chosenAccountId =
       options?.accountId !== undefined
-        ? (options.accountId ? clampStr(options.accountId, 128) : null)
+        ? options.accountId
+          ? clampStr(options.accountId, 128)
+          : null
         : (primaryBill?.accountId ?? linkedInst?.accountId ?? null);
     const bankTxId =
       options?.bankTransactionId !== undefined
-        ? (options.bankTransactionId ? clampStr(options.bankTransactionId, 128) : null)
+        ? options.bankTransactionId
+          ? clampStr(options.bankTransactionId, 128)
+          : null
         : (primaryBill?.bankTransactionId ?? null);
     const discountCents = Math.max(0, Math.trunc(options?.discountCents ?? 0));
     const surchargeCents = Math.max(0, Math.trunc(options?.surchargeCents ?? 0));
@@ -2598,7 +2700,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           : null;
 
         const cleanCell: AnnualCellState = stripUndefined({
-          expectedCents: cell.expectedCents !== null ? Math.max(0, Math.trunc(cell.expectedCents)) : null,
+          expectedCents:
+            cell.expectedCents !== null ? Math.max(0, Math.trunc(cell.expectedCents)) : null,
           paidCents: cell.paidCents !== null ? Math.max(0, Math.trunc(cell.paidCents)) : null,
           paidDate: safeDate,
           isSettled: Boolean(cell.isSettled),
@@ -2678,7 +2781,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           });
         }
 
-        const hasPaymentNow = Boolean(cleanCell.isSettled) || (cleanCell.paidCents !== null && cleanCell.paidCents > 0);
+        const hasPaymentNow =
+          Boolean(cleanCell.isSettled) || (cleanCell.paidCents !== null && cleanCell.paidCents > 0);
         if (hasPaymentNow && newPaidCash >= 0) {
           const existingActive = resolveActivePaymentEvents(state.paymentEvents).find(
             (ev) =>
@@ -2791,7 +2895,10 @@ export function OrionProvider({ children }: { children: ReactNode }) {
   const persistAnnualCategoryHistory = async (
     ownerId: string,
     targetYear: number,
-    projection: Pick<OrionState, "monthlyBills" | "annualExpenses" | "transactions" | "annualYears">,
+    projection: Pick<
+      OrionState,
+      "monthlyBills" | "annualExpenses" | "transactions" | "annualYears"
+    >,
   ) => {
     const payload = buildYearSnapshotPayload(projection, targetYear);
     const snapshotUpdatedAt = new Date().toISOString();
@@ -2893,10 +3000,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
       await batch.commit();
       await persistAnnualCategoryHistory(ownerId, year, {
         ...state,
-        annualExpenses: [
-          ...state.annualExpenses,
-          { id, year, creditor, category, dueDay, months },
-        ],
+        annualExpenses: [...state.annualExpenses, { id, year, creditor, category, dueDay, months }],
       });
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `users/${ownerId}/annualExpenses/${id}`);
@@ -2971,7 +3075,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         const totalSurcharge = Number(bd["surchargeCents"] ?? 0) + surchargeNow;
         const settled = Boolean(isSettled);
         const finalNote =
-          note !== undefined ? clampStr(note, 300) : (typeof bd["note"] === "string" ? bd["note"] : "");
+          note !== undefined
+            ? clampStr(note, 300)
+            : typeof bd["note"] === "string"
+              ? bd["note"]
+              : "";
         const mergedAtts = sanitizeAttachments([
           ...((bd["attachments"] as PaymentAttachmentRef[] | undefined) ?? []),
           ...incomingAtts,
@@ -2986,9 +3094,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
             discountCents: totalDiscount > 0 ? totalDiscount : null,
             surchargeCents: totalSurcharge > 0 ? totalSurcharge : null,
             note: finalNote || undefined,
-            accountId: chosenAccountId ?? (typeof bd["accountId"] === "string" ? bd["accountId"] : null),
+            accountId:
+              chosenAccountId ?? (typeof bd["accountId"] === "string" ? bd["accountId"] : null),
             bankTransactionId:
-              bankTxId ?? (typeof bd["bankTransactionId"] === "string" ? bd["bankTransactionId"] : null),
+              bankTxId ??
+              (typeof bd["bankTransactionId"] === "string" ? bd["bankTransactionId"] : null),
             attachments: mergedAtts.length > 0 ? mergedAtts : undefined,
             updatedAt: serverTimestamp(),
           }),
@@ -3009,8 +3119,14 @@ export function OrionProvider({ children }: { children: ReactNode }) {
               discountCents: totalDiscount > 0 ? totalDiscount : null,
               surchargeCents: totalSurcharge > 0 ? totalSurcharge : null,
               note: finalNote || undefined,
-              accountId: chosenAccountId ?? (typeof idata["accountId"] === "string" ? idata["accountId"] : null),
-              bankTransactionId: bankTxId ?? (typeof idata["bankTransactionId"] === "string" ? idata["bankTransactionId"] : null),
+              accountId:
+                chosenAccountId ??
+                (typeof idata["accountId"] === "string" ? idata["accountId"] : null),
+              bankTransactionId:
+                bankTxId ??
+                (typeof idata["bankTransactionId"] === "string"
+                  ? idata["bankTransactionId"]
+                  : null),
               attachments: instMergedAtts.length > 0 ? instMergedAtts : undefined,
               updatedAt: serverTimestamp(),
             }),
@@ -3100,7 +3216,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
               expectedCents: Number(bd["expectedCents"] ?? 0),
               isSettled: Boolean(bd["isSettled"]),
               accountId: typeof bd["accountId"] === "string" ? bd["accountId"] : null,
-              bankTransactionId: typeof bd["bankTransactionId"] === "string" ? bd["bankTransactionId"] : null,
+              bankTransactionId:
+                typeof bd["bankTransactionId"] === "string" ? bd["bankTransactionId"] : null,
               note: typeof bd["note"] === "string" ? bd["note"] : undefined,
             },
             afterData: {
@@ -3128,7 +3245,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           await persistAnnualCategoryHistory(ownerId, billYear, {
             ...state,
             monthlyBills: state.monthlyBills.map((b) =>
-              b.id === billId ? { ...b, paidCents: finalBillPaidCents, paidDate: safeDate, isSettled } : b,
+              b.id === billId
+                ? { ...b, paidCents: finalBillPaidCents, paidDate: safeDate, isSettled }
+                : b,
             ),
           });
         }
@@ -3208,7 +3327,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         const totalSurcharge = Number(idata["surchargeCents"] ?? 0) + surchargeNow;
         const settled = Boolean(isSettled);
         const finalNote =
-          note !== undefined ? clampStr(note, 300) : (typeof idata["note"] === "string" ? idata["note"] : "");
+          note !== undefined
+            ? clampStr(note, 300)
+            : typeof idata["note"] === "string"
+              ? idata["note"]
+              : "";
         const mergedAtts = sanitizeAttachments([
           ...((idata["attachments"] as PaymentAttachmentRef[] | undefined) ?? []),
           ...incomingAtts,
@@ -3223,8 +3346,12 @@ export function OrionProvider({ children }: { children: ReactNode }) {
             discountCents: totalDiscount > 0 ? totalDiscount : null,
             surchargeCents: totalSurcharge > 0 ? totalSurcharge : null,
             note: finalNote || undefined,
-            accountId: chosenAccountId ?? (typeof idata["accountId"] === "string" ? idata["accountId"] : null),
-            bankTransactionId: bankTxId ?? (typeof idata["bankTransactionId"] === "string" ? idata["bankTransactionId"] : null),
+            accountId:
+              chosenAccountId ??
+              (typeof idata["accountId"] === "string" ? idata["accountId"] : null),
+            bankTransactionId:
+              bankTxId ??
+              (typeof idata["bankTransactionId"] === "string" ? idata["bankTransactionId"] : null),
             attachments: mergedAtts.length > 0 ? mergedAtts : undefined,
             updatedAt: serverTimestamp(),
           }),
@@ -3245,8 +3372,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
               discountCents: totalDiscount > 0 ? totalDiscount : null,
               surchargeCents: totalSurcharge > 0 ? totalSurcharge : null,
               note: finalNote || undefined,
-              accountId: chosenAccountId ?? (typeof bd["accountId"] === "string" ? bd["accountId"] : null),
-              bankTransactionId: bankTxId ?? (typeof bd["bankTransactionId"] === "string" ? bd["bankTransactionId"] : null),
+              accountId:
+                chosenAccountId ?? (typeof bd["accountId"] === "string" ? bd["accountId"] : null),
+              bankTransactionId:
+                bankTxId ??
+                (typeof bd["bankTransactionId"] === "string" ? bd["bankTransactionId"] : null),
               attachments: bAtts.length > 0 ? bAtts : undefined,
               updatedAt: serverTimestamp(),
             }),
@@ -3335,7 +3465,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
               expectedCents: Number(idata["expectedCents"] ?? 0),
               isSettled: Boolean(idata["isSettled"]),
               accountId: typeof idata["accountId"] === "string" ? idata["accountId"] : null,
-              bankTransactionId: typeof idata["bankTransactionId"] === "string" ? idata["bankTransactionId"] : null,
+              bankTransactionId:
+                typeof idata["bankTransactionId"] === "string" ? idata["bankTransactionId"] : null,
               note: typeof idata["note"] === "string" ? idata["note"] : undefined,
             },
             afterData: {
@@ -3396,18 +3527,30 @@ export function OrionProvider({ children }: { children: ReactNode }) {
             if (before["paidDate"] !== GENERIC_PAYMENT_DATE) return;
             changes["paidDate"] = repair.dates["paidDate"];
             if (repair.collection === "paymentEvents" && before["afterData"]) {
-              changes["afterData"] = { ...(before["afterData"] as DocumentData), paidDate: repair.dates["paidDate"] };
+              changes["afterData"] = {
+                ...(before["afterData"] as DocumentData),
+                paidDate: repair.dates["paidDate"],
+              };
             }
           }
           // Archive first: the compatibility adapter commits sequentially, so an interruption
           // cannot change a record without preserving its original snapshot.
-          tx.set(doc(db, "users", ownerId, "paymentDateRepairs", `${repair.collection}_${repair.id}_2026-11-15`), {
-            reason: "Correção da data genérica de 15/11/2026 pelo vencimento da competência",
-            sourcePath: target.path,
-            beforeData: before,
-            afterChanges: changes,
-            correctedAt: new Date().toISOString(),
-          });
+          tx.set(
+            doc(
+              db,
+              "users",
+              ownerId,
+              "paymentDateRepairs",
+              `${repair.collection}_${repair.id}_2026-11-15`,
+            ),
+            {
+              reason: "Correção da data genérica de 15/11/2026 pelo vencimento da competência",
+              sourcePath: target.path,
+              beforeData: before,
+              afterChanges: changes,
+              correctedAt: new Date().toISOString(),
+            },
+          );
           tx.update(target, { ...changes, updatedAt: serverTimestamp() });
           corrected++;
         });
@@ -3443,12 +3586,30 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           : null;
         const targetEvData = targetEvSnap?.exists() ? (targetEvSnap.data() as DocumentData) : null;
 
-        const billId = input.billId ?? (typeof targetEvData?.["billId"] === "string" ? (targetEvData["billId"] as string) : undefined);
-        const installmentId = input.installmentId ?? (typeof targetEvData?.["installmentId"] === "string" ? (targetEvData["installmentId"] as string) : undefined);
-        const annualRowId = input.annualRowId ?? (typeof targetEvData?.["annualRowId"] === "string" ? (targetEvData["annualRowId"] as string) : undefined);
-        const period = input.period ?? (typeof targetEvData?.["period"] === "string" ? (targetEvData["period"] as string) : undefined);
+        const billId =
+          input.billId ??
+          (typeof targetEvData?.["billId"] === "string"
+            ? (targetEvData["billId"] as string)
+            : undefined);
+        const installmentId =
+          input.installmentId ??
+          (typeof targetEvData?.["installmentId"] === "string"
+            ? (targetEvData["installmentId"] as string)
+            : undefined);
+        const annualRowId =
+          input.annualRowId ??
+          (typeof targetEvData?.["annualRowId"] === "string"
+            ? (targetEvData["annualRowId"] as string)
+            : undefined);
+        const period =
+          input.period ??
+          (typeof targetEvData?.["period"] === "string"
+            ? (targetEvData["period"] as string)
+            : undefined);
 
-        const billSnap = billId ? await tx.get(doc(db, "users", ownerId, "monthlyBills", billId)) : null;
+        const billSnap = billId
+          ? await tx.get(doc(db, "users", ownerId, "monthlyBills", billId))
+          : null;
         const instSnap = installmentId
           ? await tx.get(doc(db, "users", ownerId, "payableInstallments", installmentId))
           : null;
@@ -3460,15 +3621,21 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         const idata = instSnap?.exists() ? (instSnap.data() as DocumentData) : null;
         const ad = annSnap?.exists() ? (annSnap.data() as DocumentData) : null;
 
-        const oldCash = Number(targetEvData?.["paidCents"] ?? bd?.["paidCents"] ?? idata?.["paidCents"] ?? 0);
+        const oldCash = Number(
+          targetEvData?.["paidCents"] ?? bd?.["paidCents"] ?? idata?.["paidCents"] ?? 0,
+        );
         const oldAccountId =
           targetEvData && "accountId" in targetEvData
             ? ((targetEvData["accountId"] as string | null) ?? null)
-            : ((bd?.["accountId"] as string | null) ?? (idata?.["accountId"] as string | null) ?? null);
+            : ((bd?.["accountId"] as string | null) ??
+              (idata?.["accountId"] as string | null) ??
+              null);
         const oldBankTxId =
           targetEvData && "bankTransactionId" in targetEvData
             ? ((targetEvData["bankTransactionId"] as string | null) ?? null)
-            : ((bd?.["bankTransactionId"] as string | null) ?? (idata?.["bankTransactionId"] as string | null) ?? null);
+            : ((bd?.["bankTransactionId"] as string | null) ??
+              (idata?.["bankTransactionId"] as string | null) ??
+              null);
 
         const oldBankRef =
           oldAccountId && !oldBankTxId && oldCash > 0
@@ -3496,7 +3663,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           if (ev.id === input.paymentEventId) return false;
           if (billId && ev.billId === billId) return true;
           if (installmentId && ev.installmentId === installmentId) return true;
-          if (annualRowId && period && ev.annualRowId === annualRowId && ev.period === period) return true;
+          if (annualRowId && period && ev.annualRowId === annualRowId && ev.period === period)
+            return true;
           return false;
         });
         const otherPaid = otherActive.reduce((s, ev) => s + Math.max(0, ev.paidCents), 0);
@@ -3622,11 +3790,18 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           0,
           Math.trunc(
             input.expectedCents ??
-              Number(targetEvData?.["expectedCents"] ?? bd?.["expectedCents"] ?? idata?.["expectedCents"] ?? 0),
+              Number(
+                targetEvData?.["expectedCents"] ??
+                  bd?.["expectedCents"] ??
+                  idata?.["expectedCents"] ??
+                  0,
+              ),
           ),
         );
         const dueDate = clampStr(
-          String(targetEvData?.["dueDate"] ?? bd?.["dueDate"] ?? idata?.["dueDate"] ?? safeDate ?? ""),
+          String(
+            targetEvData?.["dueDate"] ?? bd?.["dueDate"] ?? idata?.["dueDate"] ?? safeDate ?? "",
+          ),
           10,
         );
 
@@ -3636,12 +3811,24 @@ export function OrionProvider({ children }: { children: ReactNode }) {
             ownerId,
             billId: billId ?? null,
             installmentId: installmentId ?? null,
-            contractId: (targetEvData?.["contractId"] as string | null) ?? (bd?.["contractId"] as string | null) ?? (idata?.["contractId"] as string | null) ?? null,
+            contractId:
+              (targetEvData?.["contractId"] as string | null) ??
+              (bd?.["contractId"] as string | null) ??
+              (idata?.["contractId"] as string | null) ??
+              null,
             annualRowId: annualRowId ?? null,
             period: period ?? null,
-            cardId: (targetEvData?.["cardId"] as string | null) ?? (bd?.["cardId"] as string | null) ?? null,
+            cardId:
+              (targetEvData?.["cardId"] as string | null) ??
+              (bd?.["cardId"] as string | null) ??
+              null,
             creditor,
-            category: clampStr(String(targetEvData?.["category"] ?? bd?.["category"] ?? ad?.["category"] ?? "Despesas"), 60),
+            category: clampStr(
+              String(
+                targetEvData?.["category"] ?? bd?.["category"] ?? ad?.["category"] ?? "Despesas",
+              ),
+              60,
+            ),
             dueDate,
             expectedCents: expected,
             paidCents: newCash,
@@ -3657,10 +3844,15 @@ export function OrionProvider({ children }: { children: ReactNode }) {
             reason: clampStr(input.reason || "Correção manual de pagamento", 300),
             eventCreatedAt: new Date().toISOString(),
             beforeData: {
-              paidDate: (targetEvData?.["paidDate"] as string | null) ?? (bd?.["paidDate"] as string | null) ?? null,
+              paidDate:
+                (targetEvData?.["paidDate"] as string | null) ??
+                (bd?.["paidDate"] as string | null) ??
+                null,
               paidCents: oldCash,
               expectedCents: expected,
-              isSettled: Boolean(targetEvData?.["isSettled"] ?? bd?.["isSettled"] ?? idata?.["isSettled"]),
+              isSettled: Boolean(
+                targetEvData?.["isSettled"] ?? bd?.["isSettled"] ?? idata?.["isSettled"],
+              ),
               accountId: oldAccountId,
               bankTransactionId: oldBankTxId,
               note: typeof bd?.["note"] === "string" ? (bd["note"] as string) : undefined,
@@ -3684,7 +3876,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         );
       });
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `users/${ownerId}/paymentEvents/${newEventId}`);
+      handleFirestoreError(
+        err,
+        OperationType.WRITE,
+        `users/${ownerId}/paymentEvents/${newEventId}`,
+      );
     } finally {
       if (idemKey) inFlightKeysRef.current.delete(idemKey);
     }
@@ -3707,12 +3903,30 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           : null;
         const targetEvData = targetEvSnap?.exists() ? (targetEvSnap.data() as DocumentData) : null;
 
-        const billId = input.billId ?? (typeof targetEvData?.["billId"] === "string" ? (targetEvData["billId"] as string) : undefined);
-        const installmentId = input.installmentId ?? (typeof targetEvData?.["installmentId"] === "string" ? (targetEvData["installmentId"] as string) : undefined);
-        const annualRowId = input.annualRowId ?? (typeof targetEvData?.["annualRowId"] === "string" ? (targetEvData["annualRowId"] as string) : undefined);
-        const period = input.period ?? (typeof targetEvData?.["period"] === "string" ? (targetEvData["period"] as string) : undefined);
+        const billId =
+          input.billId ??
+          (typeof targetEvData?.["billId"] === "string"
+            ? (targetEvData["billId"] as string)
+            : undefined);
+        const installmentId =
+          input.installmentId ??
+          (typeof targetEvData?.["installmentId"] === "string"
+            ? (targetEvData["installmentId"] as string)
+            : undefined);
+        const annualRowId =
+          input.annualRowId ??
+          (typeof targetEvData?.["annualRowId"] === "string"
+            ? (targetEvData["annualRowId"] as string)
+            : undefined);
+        const period =
+          input.period ??
+          (typeof targetEvData?.["period"] === "string"
+            ? (targetEvData["period"] as string)
+            : undefined);
 
-        const billSnap = billId ? await tx.get(doc(db, "users", ownerId, "monthlyBills", billId)) : null;
+        const billSnap = billId
+          ? await tx.get(doc(db, "users", ownerId, "monthlyBills", billId))
+          : null;
         const instSnap = installmentId
           ? await tx.get(doc(db, "users", ownerId, "payableInstallments", installmentId))
           : null;
@@ -3724,15 +3938,21 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         const idata = instSnap?.exists() ? (instSnap.data() as DocumentData) : null;
         const ad = annSnap?.exists() ? (annSnap.data() as DocumentData) : null;
 
-        const oldCash = Number(targetEvData?.["paidCents"] ?? bd?.["paidCents"] ?? idata?.["paidCents"] ?? 0);
+        const oldCash = Number(
+          targetEvData?.["paidCents"] ?? bd?.["paidCents"] ?? idata?.["paidCents"] ?? 0,
+        );
         const oldAccountId =
           targetEvData && "accountId" in targetEvData
             ? ((targetEvData["accountId"] as string | null) ?? null)
-            : ((bd?.["accountId"] as string | null) ?? (idata?.["accountId"] as string | null) ?? null);
+            : ((bd?.["accountId"] as string | null) ??
+              (idata?.["accountId"] as string | null) ??
+              null);
         const oldBankTxId =
           targetEvData && "bankTransactionId" in targetEvData
             ? ((targetEvData["bankTransactionId"] as string | null) ?? null)
-            : ((bd?.["bankTransactionId"] as string | null) ?? (idata?.["bankTransactionId"] as string | null) ?? null);
+            : ((bd?.["bankTransactionId"] as string | null) ??
+              (idata?.["bankTransactionId"] as string | null) ??
+              null);
 
         const oldBankSnap =
           oldAccountId && !oldBankTxId && oldCash > 0
@@ -3746,7 +3966,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           if (ev.id === input.paymentEventId) return false;
           if (billId && ev.billId === billId) return true;
           if (installmentId && ev.installmentId === installmentId) return true;
-          if (annualRowId && period && ev.annualRowId === annualRowId && ev.period === period) return true;
+          if (annualRowId && period && ev.annualRowId === annualRowId && ev.period === period)
+            return true;
           return false;
         });
         const remainingPaid = remainingActive.reduce((s, ev) => s + Math.max(0, ev.paidCents), 0);
@@ -3763,7 +3984,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
               discountCents: remainingPaid > 0 ? (latestRemaining?.discountCents ?? null) : null,
               surchargeCents: remainingPaid > 0 ? (latestRemaining?.surchargeCents ?? null) : null,
               accountId: remainingPaid > 0 ? (latestRemaining?.accountId ?? null) : null,
-              bankTransactionId: remainingPaid > 0 ? (latestRemaining?.bankTransactionId ?? null) : null,
+              bankTransactionId:
+                remainingPaid > 0 ? (latestRemaining?.bankTransactionId ?? null) : null,
               updatedAt: serverTimestamp(),
             }),
           );
@@ -3779,7 +4001,8 @@ export function OrionProvider({ children }: { children: ReactNode }) {
               discountCents: remainingPaid > 0 ? (latestRemaining?.discountCents ?? null) : null,
               surchargeCents: remainingPaid > 0 ? (latestRemaining?.surchargeCents ?? null) : null,
               accountId: remainingPaid > 0 ? (latestRemaining?.accountId ?? null) : null,
-              bankTransactionId: remainingPaid > 0 ? (latestRemaining?.bankTransactionId ?? null) : null,
+              bankTransactionId:
+                remainingPaid > 0 ? (latestRemaining?.bankTransactionId ?? null) : null,
               updatedAt: serverTimestamp(),
             }),
           );
@@ -3822,7 +4045,14 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           ) || "Credor";
         const expected = Math.max(
           0,
-          Math.trunc(Number(targetEvData?.["expectedCents"] ?? bd?.["expectedCents"] ?? idata?.["expectedCents"] ?? 0)),
+          Math.trunc(
+            Number(
+              targetEvData?.["expectedCents"] ??
+                bd?.["expectedCents"] ??
+                idata?.["expectedCents"] ??
+                0,
+            ),
+          ),
         );
 
         tx.set(
@@ -3831,12 +4061,21 @@ export function OrionProvider({ children }: { children: ReactNode }) {
             ownerId,
             billId: billId ?? null,
             installmentId: installmentId ?? null,
-            contractId: (targetEvData?.["contractId"] as string | null) ?? (bd?.["contractId"] as string | null) ?? null,
+            contractId:
+              (targetEvData?.["contractId"] as string | null) ??
+              (bd?.["contractId"] as string | null) ??
+              null,
             annualRowId: annualRowId ?? null,
             period: period ?? null,
             creditor,
-            category: clampStr(String(targetEvData?.["category"] ?? bd?.["category"] ?? "Despesas"), 60),
-            dueDate: clampStr(String(targetEvData?.["dueDate"] ?? bd?.["dueDate"] ?? idata?.["dueDate"] ?? ""), 10),
+            category: clampStr(
+              String(targetEvData?.["category"] ?? bd?.["category"] ?? "Despesas"),
+              60,
+            ),
+            dueDate: clampStr(
+              String(targetEvData?.["dueDate"] ?? bd?.["dueDate"] ?? idata?.["dueDate"] ?? ""),
+              10,
+            ),
             expectedCents: expected,
             paidCents: 0,
             paidDate: null,
@@ -3847,10 +4086,15 @@ export function OrionProvider({ children }: { children: ReactNode }) {
             reason: clampStr(input.reason || "Estorno de pagamento", 300),
             eventCreatedAt: new Date().toISOString(),
             beforeData: {
-              paidDate: (targetEvData?.["paidDate"] as string | null) ?? (bd?.["paidDate"] as string | null) ?? null,
+              paidDate:
+                (targetEvData?.["paidDate"] as string | null) ??
+                (bd?.["paidDate"] as string | null) ??
+                null,
               paidCents: oldCash,
               expectedCents: expected,
-              isSettled: Boolean(targetEvData?.["isSettled"] ?? bd?.["isSettled"] ?? idata?.["isSettled"]),
+              isSettled: Boolean(
+                targetEvData?.["isSettled"] ?? bd?.["isSettled"] ?? idata?.["isSettled"],
+              ),
               accountId: oldAccountId,
               bankTransactionId: oldBankTxId,
             },
@@ -3866,7 +4110,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         );
       });
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `users/${ownerId}/paymentEvents/${revEventId}`);
+      handleFirestoreError(
+        err,
+        OperationType.WRITE,
+        `users/${ownerId}/paymentEvents/${revEventId}`,
+      );
     } finally {
       if (idemKey) inFlightKeysRef.current.delete(idemKey);
     }
@@ -4017,64 +4265,62 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const removeAttachmentFromHistoryRow: OrionContextValue["removeAttachmentFromHistoryRow"] = async (
-    row,
-    attachmentId,
-  ) => {
-    const ownerId = requireUid();
-    const refs: Array<ReturnType<typeof doc>> = [];
-    if (row.rawRefs.paymentEventId) {
-      refs.push(doc(db, "users", ownerId, "paymentEvents", row.rawRefs.paymentEventId));
-    }
-    if (row.rawRefs.billId) {
-      refs.push(doc(db, "users", ownerId, "monthlyBills", row.rawRefs.billId));
-    }
-    if (row.rawRefs.installmentId) {
-      refs.push(doc(db, "users", ownerId, "payableInstallments", row.rawRefs.installmentId));
-    }
-    if (row.rawRefs.revenueEventId) {
-      refs.push(doc(db, "users", ownerId, "revenueEvents", row.rawRefs.revenueEventId));
-    }
-    if (row.rawRefs.entryId) {
-      refs.push(doc(db, "users", ownerId, "revenueEntries", row.rawRefs.entryId));
-    }
-
-    const linkedFiscalReceipt = state.fiscalReceipts.find((fr) => fr.id === attachmentId);
-    let storagePathToDelete: string | undefined;
-    try {
-      if (linkedFiscalReceipt) {
-        await updateDoc(doc(db, "users", ownerId, "fiscalReceipts", linkedFiscalReceipt.id), {
-          linkedTransactionId: "",
-          updatedAt: serverTimestamp(),
-        });
-        return;
+  const removeAttachmentFromHistoryRow: OrionContextValue["removeAttachmentFromHistoryRow"] =
+    async (row, attachmentId) => {
+      const ownerId = requireUid();
+      const refs: Array<ReturnType<typeof doc>> = [];
+      if (row.rawRefs.paymentEventId) {
+        refs.push(doc(db, "users", ownerId, "paymentEvents", row.rawRefs.paymentEventId));
+      }
+      if (row.rawRefs.billId) {
+        refs.push(doc(db, "users", ownerId, "monthlyBills", row.rawRefs.billId));
+      }
+      if (row.rawRefs.installmentId) {
+        refs.push(doc(db, "users", ownerId, "payableInstallments", row.rawRefs.installmentId));
+      }
+      if (row.rawRefs.revenueEventId) {
+        refs.push(doc(db, "users", ownerId, "revenueEvents", row.rawRefs.revenueEventId));
+      }
+      if (row.rawRefs.entryId) {
+        refs.push(doc(db, "users", ownerId, "revenueEntries", row.rawRefs.entryId));
       }
 
-      await runTransaction(db, async (tx) => {
-        const snaps = await Promise.all(refs.map((r) => tx.get(r)));
-        for (const s of snaps) {
-          if (!s.exists()) continue;
-          const prev = (s.data()["attachments"] as PaymentAttachmentRef[] | undefined) ?? [];
-          const matched = prev.find((a) => a.id === attachmentId);
-          if (matched?.storagePath) storagePathToDelete = matched.storagePath;
-          const next = prev.filter((a) => a.id !== attachmentId);
-          tx.update(s.ref, {
-            attachments: next,
+      const linkedFiscalReceipt = state.fiscalReceipts.find((fr) => fr.id === attachmentId);
+      let storagePathToDelete: string | undefined;
+      try {
+        if (linkedFiscalReceipt) {
+          await updateDoc(doc(db, "users", ownerId, "fiscalReceipts", linkedFiscalReceipt.id), {
+            linkedTransactionId: "",
             updatedAt: serverTimestamp(),
           });
+          return;
         }
-      });
-      if (storagePathToDelete) {
-        try {
-          await deleteObject(storageRef(storage, storagePathToDelete));
-        } catch {
-          // Ignore missing Storage object
+
+        await runTransaction(db, async (tx) => {
+          const snaps = await Promise.all(refs.map((r) => tx.get(r)));
+          for (const s of snaps) {
+            if (!s.exists()) continue;
+            const prev = (s.data()["attachments"] as PaymentAttachmentRef[] | undefined) ?? [];
+            const matched = prev.find((a) => a.id === attachmentId);
+            if (matched?.storagePath) storagePathToDelete = matched.storagePath;
+            const next = prev.filter((a) => a.id !== attachmentId);
+            tx.update(s.ref, {
+              attachments: next,
+              updatedAt: serverTimestamp(),
+            });
+          }
+        });
+        if (storagePathToDelete) {
+          try {
+            await deleteObject(storageRef(storage, storagePathToDelete));
+          } catch {
+            // Ignore missing Storage object
+          }
         }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `users/${ownerId}/attachments/${row.id}`);
       }
-    } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `users/${ownerId}/attachments/${row.id}`);
-    }
-  };
+    };
 
   const savePersonalAgenda: OrionContextValue["savePersonalAgenda"] = async (record) => {
     const ownerId = requireUid();
@@ -4082,7 +4328,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     const path = `users/${ownerId}/personalAgenda/${id}`;
     const existing = record.id ? state.personalAgenda.find((r) => r.id === id) : undefined;
     const customDates = Array.isArray(record.customDates)
-      ? Array.from(new Set(record.customDates.filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)))).sort().slice(0, 120)
+      ? Array.from(new Set(record.customDates.filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))))
+          .sort()
+          .slice(0, 120)
       : undefined;
 
     const payload = stripUndefined({
@@ -4123,11 +4371,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
       }
       return id;
     } catch (err) {
-      handleFirestoreError(
-        err,
-        existing ? OperationType.UPDATE : OperationType.CREATE,
-        path,
-      );
+      handleFirestoreError(err, existing ? OperationType.UPDATE : OperationType.CREATE, path);
       return id;
     }
   };
@@ -4184,14 +4428,26 @@ export function OrionProvider({ children }: { children: ReactNode }) {
       sourceId: clampStr(override.sourceId, 160),
       occurrenceDate: clampStr(override.occurrenceDate, 10),
       action: override.action,
-      postponedToDate: override.postponedToDate ? clampStr(override.postponedToDate, 10) : undefined,
-      postponedToTime: override.postponedToTime ? clampStr(override.postponedToTime, 10) : undefined,
+      postponedToDate: override.postponedToDate
+        ? clampStr(override.postponedToDate, 10)
+        : undefined,
+      postponedToTime: override.postponedToTime
+        ? clampStr(override.postponedToTime, 10)
+        : undefined,
       overrideTitle: override.overrideTitle ? clampStr(override.overrideTitle, 160) : undefined,
       overrideTime: override.overrideTime ? clampStr(override.overrideTime, 10) : undefined,
-      overrideEndTime: override.overrideEndTime ? clampStr(override.overrideEndTime, 10) : undefined,
-      overrideBreakRule: override.overrideBreakRule ? clampStr(override.overrideBreakRule, 120) : undefined,
-      overrideCompany: override.overrideCompany ? clampStr(override.overrideCompany, 140) : undefined,
-      overrideDescription: override.overrideDescription ? clampStr(override.overrideDescription, 500) : undefined,
+      overrideEndTime: override.overrideEndTime
+        ? clampStr(override.overrideEndTime, 10)
+        : undefined,
+      overrideBreakRule: override.overrideBreakRule
+        ? clampStr(override.overrideBreakRule, 120)
+        : undefined,
+      overrideCompany: override.overrideCompany
+        ? clampStr(override.overrideCompany, 140)
+        : undefined,
+      overrideDescription: override.overrideDescription
+        ? clampStr(override.overrideDescription, 500)
+        : undefined,
       note: override.note ? clampStr(override.note, 300) : undefined,
       updatedAtIso: nowIso,
       updatedAt: serverTimestamp(),
@@ -4200,14 +4456,26 @@ export function OrionProvider({ children }: { children: ReactNode }) {
       if (existing) {
         const updateFields = stripUndefined({
           action: override.action,
-          postponedToDate: override.postponedToDate ? clampStr(override.postponedToDate, 10) : undefined,
-          postponedToTime: override.postponedToTime ? clampStr(override.postponedToTime, 10) : undefined,
+          postponedToDate: override.postponedToDate
+            ? clampStr(override.postponedToDate, 10)
+            : undefined,
+          postponedToTime: override.postponedToTime
+            ? clampStr(override.postponedToTime, 10)
+            : undefined,
           overrideTitle: override.overrideTitle ? clampStr(override.overrideTitle, 160) : undefined,
           overrideTime: override.overrideTime ? clampStr(override.overrideTime, 10) : undefined,
-          overrideEndTime: override.overrideEndTime ? clampStr(override.overrideEndTime, 10) : undefined,
-          overrideBreakRule: override.overrideBreakRule ? clampStr(override.overrideBreakRule, 120) : undefined,
-          overrideCompany: override.overrideCompany ? clampStr(override.overrideCompany, 140) : undefined,
-          overrideDescription: override.overrideDescription ? clampStr(override.overrideDescription, 500) : undefined,
+          overrideEndTime: override.overrideEndTime
+            ? clampStr(override.overrideEndTime, 10)
+            : undefined,
+          overrideBreakRule: override.overrideBreakRule
+            ? clampStr(override.overrideBreakRule, 120)
+            : undefined,
+          overrideCompany: override.overrideCompany
+            ? clampStr(override.overrideCompany, 140)
+            : undefined,
+          overrideDescription: override.overrideDescription
+            ? clampStr(override.overrideDescription, 500)
+            : undefined,
           note: override.note ? clampStr(override.note, 300) : undefined,
           updatedAtIso: nowIso,
           updatedAt: serverTimestamp(),
@@ -4278,7 +4546,10 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     const payload = stripUndefined({
       timeFormat: merged.timeFormat === "12h" ? "12h" : "24h",
       showSeconds: Boolean(merged.showSeconds),
-      defaultSnoozeMinutes: Math.min(120, Math.max(1, Math.trunc(merged.defaultSnoozeMinutes || 5))),
+      defaultSnoozeMinutes: Math.min(
+        120,
+        Math.max(1, Math.trunc(merged.defaultSnoozeMinutes || 5)),
+      ),
       leapYearBirthdayRule: merged.leapYearBirthdayRule === "mar01" ? "mar01" : "feb28",
       shoppingHighlightColor: clampStr(merged.shoppingHighlightColor || "#fef08a", 20),
       notificationsEnabled: Boolean(merged.notificationsEnabled),
@@ -4307,45 +4578,47 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const deleteContactCategoryWithRemap: OrionContextValue["deleteContactCategoryWithRemap"] = async (
-    categoryId,
-    replacementCategoryId,
-  ) => {
-    const ownerId = requireUid();
-    const contactsUsing = state.agendaContacts.filter((c) => c.categoryId === categoryId);
-    if (contactsUsing.length > 0 && !replacementCategoryId) {
-      throw new Error("Selecione uma categoria de destino antes de excluir.");
-    }
-    const batch = writeBatch(db);
-    if (replacementCategoryId) {
-      for (const c of contactsUsing) {
-        batch.update(doc(db, "users", ownerId, "agendaContacts", c.id), {
-          categoryId: clampStr(replacementCategoryId, 128),
-          subcategoryId: deleteField(),
-          updatedAt: serverTimestamp(),
-        });
+  const deleteContactCategoryWithRemap: OrionContextValue["deleteContactCategoryWithRemap"] =
+    async (categoryId, replacementCategoryId) => {
+      const ownerId = requireUid();
+      const contactsUsing = state.agendaContacts.filter((c) => c.categoryId === categoryId);
+      if (contactsUsing.length > 0 && !replacementCategoryId) {
+        throw new Error("Selecione uma categoria de destino antes de excluir.");
       }
-    }
-    const customSubs = state.contactSubcategories.filter((s) => s.categoryId === categoryId);
-    for (const s of customSubs) {
-      batch.delete(doc(db, "users", ownerId, "contactSubcategories", s.id));
-    }
-    const customCat = state.contactCategories.find((c) => c.id === categoryId);
-    if (customCat) {
-      batch.delete(doc(db, "users", ownerId, "contactCategories", categoryId));
-    }
-    try {
-      await batch.commit();
-      if (!customCat) {
-        const hidden = Array.from(
-          new Set([...(state.agendaSettings.hiddenDefaultCategoryIds ?? []), categoryId]),
-        ).slice(0, 20);
-        await updateAgendaSettings({ hiddenDefaultCategoryIds: hidden });
+      const batch = writeBatch(db);
+      if (replacementCategoryId) {
+        for (const c of contactsUsing) {
+          batch.update(doc(db, "users", ownerId, "agendaContacts", c.id), {
+            categoryId: clampStr(replacementCategoryId, 128),
+            subcategoryId: deleteField(),
+            updatedAt: serverTimestamp(),
+          });
+        }
       }
-    } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `users/${ownerId}/contactCategories/${categoryId}`);
-    }
-  };
+      const customSubs = state.contactSubcategories.filter((s) => s.categoryId === categoryId);
+      for (const s of customSubs) {
+        batch.delete(doc(db, "users", ownerId, "contactSubcategories", s.id));
+      }
+      const customCat = state.contactCategories.find((c) => c.id === categoryId);
+      if (customCat) {
+        batch.delete(doc(db, "users", ownerId, "contactCategories", categoryId));
+      }
+      try {
+        await batch.commit();
+        if (!customCat) {
+          const hidden = Array.from(
+            new Set([...(state.agendaSettings.hiddenDefaultCategoryIds ?? []), categoryId]),
+          ).slice(0, 20);
+          await updateAgendaSettings({ hiddenDefaultCategoryIds: hidden });
+        }
+      } catch (err) {
+        handleFirestoreError(
+          err,
+          OperationType.DELETE,
+          `users/${ownerId}/contactCategories/${categoryId}`,
+        );
+      }
+    };
 
   const upsertContactSubcategory: OrionContextValue["upsertContactSubcategory"] = async (sub) => {
     const ownerId = requireUid();
@@ -4436,11 +4709,15 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           ? Math.trunc(contact.birthDay)
           : null,
       birthMonth:
-        typeof contact.birthMonth === "number" && contact.birthMonth >= 1 && contact.birthMonth <= 12
+        typeof contact.birthMonth === "number" &&
+        contact.birthMonth >= 1 &&
+        contact.birthMonth <= 12
           ? Math.trunc(contact.birthMonth)
           : null,
       birthYear:
-        typeof contact.birthYear === "number" && contact.birthYear >= 1900 && contact.birthYear <= 2100
+        typeof contact.birthYear === "number" &&
+        contact.birthYear >= 1900 &&
+        contact.birthYear <= 2100
           ? Math.trunc(contact.birthYear)
           : null,
       phones: cleanPhones,
@@ -4448,7 +4725,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
       categoryId: clampStr(contact.categoryId || "cat-familia", 128),
       subcategoryId: contact.subcategoryId ? clampStr(contact.subcategoryId, 128) : undefined,
       categoryColor: contact.categoryColor ? clampStr(contact.categoryColor, 20) : undefined,
-      subcategoryColor: contact.subcategoryColor ? clampStr(contact.subcategoryColor, 20) : undefined,
+      subcategoryColor: contact.subcategoryColor
+        ? clampStr(contact.subcategoryColor, 20)
+        : undefined,
       relationship: contact.relationship ? clampStr(contact.relationship, 80) : undefined,
       company: contact.company ? clampStr(contact.company, 140) : undefined,
       profession: contact.profession ? clampStr(contact.profession, 120) : undefined,
@@ -4491,7 +4770,11 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     try {
       await deleteDoc(doc(db, "users", ownerId, "agendaContacts", contactId));
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `users/${ownerId}/agendaContacts/${contactId}`);
+      handleFirestoreError(
+        err,
+        OperationType.DELETE,
+        `users/${ownerId}/agendaContacts/${contactId}`,
+      );
     }
   };
 
@@ -4574,7 +4857,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
       content: clampStr(note.content || "", 4000),
       checklistItems: cleanChecklist,
       stores: cleanStores,
-      linkedAgendaEventId: note.linkedAgendaEventId ? clampStr(note.linkedAgendaEventId, 128) : null,
+      linkedAgendaEventId: note.linkedAgendaEventId
+        ? clampStr(note.linkedAgendaEventId, 128)
+        : null,
       linkedDate: note.linkedDate ? clampStr(note.linkedDate, 10) : null,
       updatedAtIso: nowIso,
       updatedAt: serverTimestamp(),
@@ -4690,7 +4975,10 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     const ownerId = requireUid();
     try {
       const snap = await getDocs(
-        query(collection(db, "users", ownerId, "calculatorHistory"), where("ownerId", "==", ownerId)),
+        query(
+          collection(db, "users", ownerId, "calculatorHistory"),
+          where("ownerId", "==", ownerId),
+        ),
       );
       if (snap.empty) return;
       for (let i = 0; i < snap.docs.length; i += 400) {
@@ -4888,7 +5176,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     if (!vehicle) throw new Error("Veículo inválido.");
     const rawNfceKey = fueling.nfceKey?.trim();
     if (rawNfceKey && !/^\d{44}$/.test(rawNfceKey)) {
-      throw new Error("A chave da NFC-e deve conter exatamente 44 dígitos. Use Ler NFC-e para extrair a chave.");
+      throw new Error(
+        "A chave da NFC-e deve conter exatamente 44 dígitos. Use Ler NFC-e para extrair a chave.",
+      );
     }
     const id = rawNfceKey ? `nfce-${rawNfceKey}` : uid("gf");
     const fuelingRef = doc(db, "users", ownerId, "garageFuelings", id);
@@ -4919,14 +5209,20 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           if (!vehicleSnap.exists()) throw new Error("Veículo não encontrado.");
           tx.set(fuelingRef, payload);
           if (Number(fueling.odometer) > Number(vehicleSnap.data()["odometerKm"] ?? 0)) {
-            tx.update(vehicleRef, { odometerKm: Number(fueling.odometer), updatedAt: serverTimestamp() });
+            tx.update(vehicleRef, {
+              odometerKm: Number(fueling.odometer),
+              updatedAt: serverTimestamp(),
+            });
           }
         });
       } else {
         const batch = writeBatch(db);
         batch.set(fuelingRef, payload);
         if (fueling.odometer > vehicle.odometerKm) {
-          batch.update(vehicleRef, { odometerKm: Number(fueling.odometer), updatedAt: serverTimestamp() });
+          batch.update(vehicleRef, {
+            odometerKm: Number(fueling.odometer),
+            updatedAt: serverTimestamp(),
+          });
         }
         await batch.commit();
       }
@@ -4984,11 +5280,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
       await batch.commit();
       return id;
     } catch (err) {
-      handleFirestoreError(
-        err,
-        OperationType.CREATE,
-        `users/${ownerId}/garageMaintenances/${id}`,
-      );
+      handleFirestoreError(err, OperationType.CREATE, `users/${ownerId}/garageMaintenances/${id}`);
     }
   };
 
@@ -5003,11 +5295,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         updatedAt: serverTimestamp(),
       });
     } catch (err) {
-      handleFirestoreError(
-        err,
-        OperationType.UPDATE,
-        `users/${ownerId}/garageMaintenances/${id}`,
-      );
+      handleFirestoreError(err, OperationType.UPDATE, `users/${ownerId}/garageMaintenances/${id}`);
     }
   };
 
@@ -5016,11 +5304,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     try {
       await deleteDoc(doc(db, "users", ownerId, "garageMaintenances", id));
     } catch (err) {
-      handleFirestoreError(
-        err,
-        OperationType.DELETE,
-        `users/${ownerId}/garageMaintenances/${id}`,
-      );
+      handleFirestoreError(err, OperationType.DELETE, `users/${ownerId}/garageMaintenances/${id}`);
     }
   };
 
@@ -5225,7 +5509,10 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addGarageChecklist: OrionContextValue["addGarageChecklist"] = async (checklist, options) => {
+  const addGarageChecklist: OrionContextValue["addGarageChecklist"] = async (
+    checklist,
+    options,
+  ) => {
     const ownerId = requireUid();
     const id = uid("gchk");
     const vehicle = state.vehicles.find((v) => v.id === checklist.vehicleId);
@@ -5314,7 +5601,10 @@ export function OrionProvider({ children }: { children: ReactNode }) {
       typeof route.endOdometer === "number" && Number.isFinite(route.endOdometer)
         ? Math.max(0, Number(route.endOdometer))
         : undefined;
-    if (status === "CONCLUIDA" && (endOdometer === undefined || endOdometer <= route.startOdometer)) {
+    if (
+      status === "CONCLUIDA" &&
+      (endOdometer === undefined || endOdometer <= route.startOdometer)
+    ) {
       throw new Error("Informe o hodômetro final maior que o inicial para concluir o percurso.");
     }
     if (endOdometer !== undefined && endOdometer <= route.startOdometer) {
@@ -5361,33 +5651,52 @@ export function OrionProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const completeGarageRoute: OrionContextValue["completeGarageRoute"] = async (id, rawEndOdometer, checklist) => {
+  const completeGarageRoute: OrionContextValue["completeGarageRoute"] = async (
+    id,
+    rawEndOdometer,
+    checklist,
+  ) => {
     const ownerId = requireUid();
-    const requiredChecks = ["Abastecimento e autonomia conferidos", "Pneus, estepe e calibragem conferidos", "Documentos e habilitação conferidos", "Pedágios, despesas e comprovantes revisados"];
+    const requiredChecks = [
+      "Abastecimento e autonomia conferidos",
+      "Pneus, estepe e calibragem conferidos",
+      "Documentos e habilitação conferidos",
+      "Pedágios, despesas e comprovantes revisados",
+    ];
     if (!Array.isArray(checklist) || requiredChecks.some((item) => !checklist.includes(item))) {
       throw new Error("Conclua todos os itens da revisão antes de encerrar o percurso.");
     }
     const endOdometer = Number(rawEndOdometer);
-    if (!Number.isFinite(endOdometer) || endOdometer < 0) throw new Error("Informe um hodômetro final válido.");
+    if (!Number.isFinite(endOdometer) || endOdometer < 0)
+      throw new Error("Informe um hodômetro final válido.");
     const routeRef = doc(db, "users", ownerId, "garageRoutes", id);
     try {
       await runTransaction(db, async (tx) => {
         const routeSnap = await tx.get(routeRef);
         if (!routeSnap.exists()) throw new Error("Percurso não encontrado.");
         const route = routeSnap.data() as GarageRoute;
-        if ((route.status ?? "CONCLUIDA") === "CONCLUIDA") throw new Error("Este percurso já está concluído.");
-        if (endOdometer <= Number(route.startOdometer)) throw new Error("O hodômetro final deve ser maior que o inicial.");
+        if ((route.status ?? "CONCLUIDA") === "CONCLUIDA")
+          throw new Error("Este percurso já está concluído.");
+        if (endOdometer <= Number(route.startOdometer))
+          throw new Error("O hodômetro final deve ser maior que o inicial.");
         const vehicleRef = doc(db, "users", ownerId, "vehicles", route.vehicleId);
         const vehicleSnap = await tx.get(vehicleRef);
         if (!vehicleSnap.exists()) throw new Error("Veículo do percurso não encontrado.");
         const distanceKm = Number((endOdometer - Number(route.startOdometer)).toFixed(1));
-        tx.update(routeRef, { status: "CONCLUIDA", completionChecklist: requiredChecks, endOdometer, distanceKm, updatedAt: serverTimestamp() });
+        tx.update(routeRef, {
+          status: "CONCLUIDA",
+          completionChecklist: requiredChecks,
+          endOdometer,
+          distanceKm,
+          updatedAt: serverTimestamp(),
+        });
         if (endOdometer > Number(vehicleSnap.data()["odometerKm"] ?? 0)) {
           tx.update(vehicleRef, { odometerKm: endOdometer, updatedAt: serverTimestamp() });
         }
       });
     } catch (err) {
-      if (err instanceof Error && /Percurso|hodômetro|concluído|Veículo/.test(err.message)) throw err;
+      if (err instanceof Error && /Percurso|hodômetro|concluído|Veículo/.test(err.message))
+        throw err;
       handleFirestoreError(err, OperationType.UPDATE, `users/${ownerId}/garageRoutes/${id}`);
     }
   };
@@ -5558,7 +5867,9 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         quantity: Math.max(0, Number(item.quantity) || 0),
         unit: clampStr(item.unit || "un", 12) || "un",
         unitPriceCents: Math.max(0, Math.round(Number(item.unitPriceCents) || 0)),
-        ...(item.discountCents ? { discountCents: Math.max(0, Math.round(item.discountCents)) } : {}),
+        ...(item.discountCents
+          ? { discountCents: Math.max(0, Math.round(item.discountCents)) }
+          : {}),
         totalCents: Math.max(0, Math.round(Number(item.totalCents) || 0)),
       });
     });
@@ -5615,9 +5926,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
         ? clampStr(receipt.linkedTransactionId, 128)
         : undefined,
       processingStatus,
-      processingError: receipt.processingError
-        ? clampStr(receipt.processingError, 300)
-        : undefined,
+      processingError: receipt.processingError ? clampStr(receipt.processingError, 300) : undefined,
       sourceOrigin: receipt.sourceOrigin ?? "manual",
       lowConfidenceFields: Array.isArray(receipt.lowConfidenceFields)
         ? receipt.lowConfidenceFields.slice(0, 20).map((f) => clampStr(f, 50))
@@ -5896,8 +6205,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
 
     const insertedCount = eligibleWrites.filter((w) => w.action === "insert").length;
     const conflictsUpdated = eligibleWrites.filter((w) => w.action === "conflict").length;
-    const conflictsPreserved =
-      conflictStrategy === "keep_existing" ? plan.totals.conflicts : 0;
+    const conflictsPreserved = conflictStrategy === "keep_existing" ? plan.totals.conflicts : 0;
 
     return {
       inserted: insertedCount,
