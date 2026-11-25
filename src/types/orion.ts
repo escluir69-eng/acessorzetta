@@ -53,6 +53,12 @@ export type WalletTransaction = {
   date: string; // YYYY-MM-DD
   category: string;
   reconciledEventId?: string | null;
+  status?: string;
+  installmentNumber?: number;
+  totalInstallments?: number;
+  totalAmountCents?: number;
+  purchaseDate?: string;
+  billId?: string;
 };
 
 export type RevenueSource = {
