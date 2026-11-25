@@ -569,6 +569,12 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           amountCents: Number(d["amountCents"] ?? 0),
           date: String(d["date"] ?? ""),
           category: String(d["category"] ?? ""),
+          ...(typeof d["status"] === "string" ? { status: d["status"] } : {}),
+          ...(typeof d["installmentNumber"] === "number" ? { installmentNumber: d["installmentNumber"] } : {}),
+          ...(typeof d["totalInstallments"] === "number" ? { totalInstallments: d["totalInstallments"] } : {}),
+          ...(typeof d["totalAmountCents"] === "number" ? { totalAmountCents: d["totalAmountCents"] } : {}),
+          ...(typeof d["purchaseDate"] === "string" ? { purchaseDate: d["purchaseDate"] } : {}),
+          ...(typeof d["billId"] === "string" ? { billId: d["billId"] } : {}),
           ...(typeof d["reconciledEventId"] === "string" || d["reconciledEventId"] === null
             ? { reconciledEventId: d["reconciledEventId"] as string | null }
             : {}),
