@@ -196,25 +196,44 @@ export function CarteiraPage() {
   }
 
 
-  function submitBank(e: React.FormEvent) {
+  async function submitBank(e: React.FormEvent) {
     e.preventDefault();
     const bal = parseBRL(bankBal) ?? 0;
     if (!bankInst.trim() || !bankName.trim()) {
       toast.error("Informe instituição e nome da conta.");
       return;
     }
-    if (bankEditingId && user?.uid) {
-      void updateDoc(doc(db, "users", user.uid, "banks", bankEditingId), { institution: bankInst.trim(), name: bankName.trim(), number: bankNum.trim() || "0001", balanceCents: bal, updatedAt: new Date().toISOString() }).then(() => toast.success("Conta atualizada.")).catch((error) => toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a conta."));
-    } else {
-      void addBankAccount({ institution: bankInst.trim(), name: bankName.trim(), accountType: "CHECKING", number: bankNum.trim() || "0001", balanceCents: bal, color: "#173d4a" });
-      toast.success("Conta adicionada à carteira.");
+    try {
+      if (bankEditingId) {
+        if (!user?.uid) throw new Error("Entre na sua conta para editar esta conta bancária.");
+        await updateDoc(doc(db, "users", user.uid, "banks", bankEditingId), {
+          institution: bankInst.trim(),
+          name: bankName.trim(),
+          number: bankNum.trim() || "0001",
+          balanceCents: bal,
+          updatedAt: new Date().toISOString(),
+        });
+        toast.success("Conta atualizada.");
+      } else {
+        await addBankAccount({
+          institution: bankInst.trim(),
+          name: bankName.trim(),
+          accountType: "CHECKING",
+          number: bankNum.trim() || "0001",
+          balanceCents: bal,
+          color: "#173d4a",
+        });
+        toast.success("Conta adicionada à carteira.");
+      }
+      setBankEditingId(null);
+      setBankOpen(false);
+      setBankInst("");
+      setBankName("");
+      setBankNum("");
+      setBankBal("");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar a conta.");
     }
-    setBankEditingId(null);
-    setBankOpen(false);
-    setBankInst("");
-    setBankName("");
-    setBankNum("");
-    setBankBal("");
   }
 
   function openBankEditor(bank: (typeof state.banks)[number]) {
@@ -229,7 +248,7 @@ export function CarteiraPage() {
 
   async function removeBank(bank: (typeof state.banks)[number]) {
     if (!user?.uid) return;
-    if (state.transactions.some((tx) => tx.accountId === bank.id) || bank.sourceRecordId) { toast.error("Esta conta possui histórico ou vínculo externo. Oculte-a para preservar a conciliação."); return; }
+    if (state.transactions.some((tx) => tx.accountId === bank.id) || state.monthlyBills.some((bill) => bill.accountId === bank.id) || state.paymentEvents.some((event) => event.accountId === bank.id) || bank.sourceRecordId) { toast.error("Esta conta possui histórico ou vínculo externo. Oculte-a para preservar a conciliação."); return; }
     if (!window.confirm(`Excluir a conta ${bank.name}?`)) return;
     try { await deleteDoc(doc(db, "users", user.uid, "banks", bank.id)); setBankMenuId(null); toast.success("Conta excluída."); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível excluir a conta."); }
