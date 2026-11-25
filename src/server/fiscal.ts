@@ -7,7 +7,7 @@ import { generateResponse } from "@lovable.dev/ai-gateway";
 function isAllowedFiscalGovUrl(rawUrl: string): URL | null {
   try {
     const parsed = new URL(rawUrl);
-    if (parsed.protocol === "http:") parsed.protocol = "https:";
+    // Never upgrade an insecure redirect implicitly: reject HTTP targets.
     if (parsed.protocol !== "https:") return null;
     const host = parsed.hostname.toLowerCase();
     if (!host.endsWith(".gov.br")) return null;
