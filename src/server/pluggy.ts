@@ -502,8 +502,9 @@ async function persistCardInstallmentProvision(
   const sourceRecordId = `pluggy:${slot}:card-purchase:${groupHash}`;
   const installments: Array<{ period: string; dueDate: string; year: number; month: string }> = [];
 
-  for (let installment = 1; installment <= total; installment++) {
+  for (let installment = number; installment <= total; installment++) {
     const date = new Date(`${anchor}T12:00:00.000Z`);
+    date.setUTCDate(1);
     date.setUTCMonth(date.getUTCMonth() + installment - 1);
     const year = date.getUTCFullYear();
     const month = String(date.getUTCMonth() + 1).padStart(2, "0");
@@ -520,9 +521,6 @@ async function persistCardInstallmentProvision(
 
   for (const [year, yearInstallments] of byYear) {
     const months: Record<string, { expectedCents: number; paidCents: number | null; paidDate: string | null; isSettled: boolean }> = {};
-    for (let month = 1; month <= 12; month++) {
-      months[String(month).padStart(2, "0")] = { expectedCents: 0, paidCents: null, paidDate: null, isSettled: false };
-    }
     for (const installment of yearInstallments) months[installment.month] = { expectedCents: amountCents, paidCents: null, paidDate: null, isSettled: false };
     await upsertUserDoc(uid, "annualExpenses", `card_${groupHash}_${year}`, {
       year,
@@ -681,7 +679,7 @@ export async function handlePluggySync(uid: string, rawSlot: string): Promise<Re
               ...(typeof t.creditCardMetadata?.purchaseDate === "string" ? { purchaseDate: t.creditCardMetadata.purchaseDate.slice(0, 10) } : {}),
               ...(typeof t.creditCardMetadata?.billId === "string" ? { billId: t.creditCardMetadata.billId } : {}),
               ...(a.type === "CREDIT" && Number.isInteger(t.creditCardMetadata?.installmentNumber) && Number.isInteger(t.creditCardMetadata?.totalInstallments) && Number(t.creditCardMetadata?.totalInstallments) > 1
-                ? { purchaseGroupId: createHash("sha256").update([accountId, safeDesc.toLocaleLowerCase("pt-BR"), String(t.creditCardMetadata?.purchaseDate || (() => { const anchor = new Date(`${safeDate}T12:00:00.000Z`); anchor.setUTCMonth(anchor.getUTCMonth() - (Number(t.creditCardMetadata?.installmentNumber) - 1)); return anchor.toISOString().slice(0, 10); })()), String(t.creditCardMetadata?.totalInstallments)].join("|")).digest("hex").slice(0, 24) }
+                ? { purchaseGroupId: createHash("sha256").update([accountId, safeDesc.toLocaleLowerCase("pt-BR"), String(t.creditCardMetadata?.purchaseDate || (() => { const anchor = new Date(`${safeDate}T12:00:00.000Z`); anchor.setUTCDate(1); anchor.setUTCMonth(anchor.getUTCMonth() - (Number(t.creditCardMetadata?.installmentNumber) - 1)); return anchor.toISOString().slice(0, 10); })()), String(t.creditCardMetadata?.totalInstallments)].join("|")).digest("hex").slice(0, 24) }
                 : {}),
             };
             txDtos.push(dto);
