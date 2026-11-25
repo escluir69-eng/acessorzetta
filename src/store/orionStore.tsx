@@ -490,6 +490,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           number: String(d["number"] ?? ""),
           balanceCents: Number(d["balanceCents"] ?? 0),
           color: String(d["color"] ?? "#173d4a"),
+          isHidden: Boolean(d["isHidden"] ?? false),
           ...(typeof d["sourceRecordId"] === "string"
             ? { sourceRecordId: d["sourceRecordId"] }
             : {}),
