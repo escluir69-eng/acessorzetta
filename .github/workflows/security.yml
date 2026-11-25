@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
       - name: Install dependencies
@@ -33,6 +35,7 @@ jobs:
       - name: Format wallet files
         run: bunx prettier --write src/pages/CarteiraPage.tsx src/server/pluggy.ts src/store/orionStore.tsx src/types/orion.ts
       - name: Commit wallet formatting
+        if: ${{ github.event_name == 'pull_request' }}
         env:
           BRANCH_NAME: ${{ github.head_ref }}
         run: |
