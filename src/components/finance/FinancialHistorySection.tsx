@@ -221,7 +221,7 @@ export function FinancialHistorySection({ direction, rows }: FinancialHistorySec
         </div>
 
         <div className="mt-3 flex flex-wrap items-end gap-3">
-          <label className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+          <label className="w-full min-w-0 flex-auto text-xs font-medium text-muted-foreground sm:w-auto sm:flex-1">
             Regime do histórico
             <select
               aria-label="Regime do histórico"
