@@ -389,6 +389,14 @@ interface PluggyApiTransaction {
   amount?: number;
   date?: string;
   category?: string;
+  status?: string;
+  creditCardMetadata?: {
+    installmentNumber?: number;
+    totalInstallments?: number;
+    totalAmount?: number;
+    purchaseDate?: string;
+    billId?: string;
+  };
 }
 
 interface SyncedBankDto {
@@ -425,6 +433,12 @@ interface SyncedTxDto {
   amountCents: number;
   date: string;
   category: string;
+  status?: string;
+  installmentNumber?: number;
+  totalInstallments?: number;
+  totalAmountCents?: number;
+  purchaseDate?: string;
+  billId?: string;
 }
 
 async function upsertUserDoc(uid: string, sub: string, id: string, data: Record<string, unknown>): Promise<void> {
@@ -572,6 +586,12 @@ export async function handlePluggySync(uid: string, rawSlot: string): Promise<Re
               amountCents: Math.round(Number(t.amount) * 100),
               date: safeDate,
               category: String(t.category || "Sem categoria").slice(0, 60),
+              ...(typeof t.status === "string" ? { status: t.status } : {}),
+              ...(Number.isInteger(t.creditCardMetadata?.installmentNumber) ? { installmentNumber: t.creditCardMetadata!.installmentNumber } : {}),
+              ...(Number.isInteger(t.creditCardMetadata?.totalInstallments) ? { totalInstallments: t.creditCardMetadata!.totalInstallments } : {}),
+              ...(Number.isFinite(Number(t.creditCardMetadata?.totalAmount)) ? { totalAmountCents: Math.round(Number(t.creditCardMetadata?.totalAmount) * 100) } : {}),
+              ...(typeof t.creditCardMetadata?.purchaseDate === "string" ? { purchaseDate: t.creditCardMetadata.purchaseDate.slice(0, 10) } : {}),
+              ...(typeof t.creditCardMetadata?.billId === "string" ? { billId: t.creditCardMetadata.billId } : {}),
             };
             txDtos.push(dto);
             syncedTransactions.set(id, dto);
@@ -588,12 +608,59 @@ export async function handlePluggySync(uid: string, rawSlot: string): Promise<Re
               amountCents: dto.amountCents,
               date: dto.date,
               category: dto.category,
+              ...(dto.status ? { status: dto.status } : {}),
+              ...(dto.installmentNumber ? { installmentNumber: dto.installmentNumber } : {}),
+              ...(dto.totalInstallments ? { totalInstallments: dto.totalInstallments } : {}),
+              ...(dto.totalAmountCents !== undefined ? { totalAmountCents: dto.totalAmountCents } : {}),
+              ...(dto.purchaseDate ? { purchaseDate: dto.purchaseDate } : {}),
+              ...(dto.billId ? { billId: dto.billId } : {}),
             });
           }
 
           next =
             typeof tx["next"] === "string" && tx["next"].startsWith("?") ? tx["next"] : "";
         }
+        if (a.type === "CREDIT") {
+          try {
+            const billsResponse = await pluggyJson(`/bills?accountId=${encodeURIComponent(String(a.id))}&pageSize=500`, key);
+            const bills = Array.isArray(billsResponse["results"])
+              ? (billsResponse["results"] as Array<Record<string, unknown>>)
+              : [];
+            for (const bill of bills) {
+              const billId = typeof bill["id"] === "string" ? bill["id"] : "";
+              if (!billId) continue;
+              const dueDateRaw = String(bill["dueDate"] || "");
+              const closingDateRaw = String(bill["billClosingDate"] || "");
+              const dueDate = /^\d{4}-\d{2}-\d{2}/.test(dueDateRaw) ? dueDateRaw.slice(0, 10) : "";
+              const closingDate = /^\d{4}-\d{2}-\d{2}/.test(closingDateRaw) ? closingDateRaw.slice(0, 10) : "";
+              const period = (dueDate || closingDate || fallbackIso).slice(0, 7);
+              const snapshotId = `pluggy_${s}_bill_${billId.replace(/[^\w-]/g, "_")}`.slice(0, 128);
+              const billTransactions = [...syncedTransactions.values()]
+                .filter((tx) => tx.accountId === accountId && tx.billId === billId)
+                .map((tx) => ({ id: tx.id, date: tx.date, description: tx.description, amount: tx.amountCents / 100, category: tx.category }));
+              await upsertUserDoc(uid, "cardMonthSnapshots", snapshotId, {
+                accountId,
+                accountName: `${institution} · ${name}`,
+                isUnlinked: false,
+                period,
+                capturedAt: new Date().toISOString(),
+                closingDate: closingDate || null,
+                dueDate: dueDate || null,
+                invoiceCents: Number.isFinite(Number(bill["totalAmount"])) ? Math.round(Number(bill["totalAmount"]) * 100) : null,
+                providerInvoiceId: billId,
+                totalLimitCents: limit,
+                availableLimitCents: Math.round(Number(credit.availableCreditLimit || 0) * 100),
+                usedLimitCents: Math.max(0, limit - Math.round(Number(credit.availableCreditLimit || 0) * 100)),
+                transactions: billTransactions,
+                sourceRecordId: `pluggy:${s}:bill:${billId}`,
+              });
+            }
+          } catch {
+            // Algumas instituições/conexões não disponibilizam faturas pela API.
+            // A sincronização de contas e transações deve continuar normalmente.
+          }
+        }
+
       }
     }
 
