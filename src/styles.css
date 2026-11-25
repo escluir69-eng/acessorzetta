@@ -294,3 +294,26 @@ button, input, select, textarea { font: inherit; }
 .dark .zetta-settings nav button[aria-pressed="true"], .dark .zetta-settings nav .text-primary { color: var(--brand-ice); }
 .dark .zetta-settings nav button { color: var(--muted-foreground); }
 .dark .zetta-settings nav button.border-l-2 { color: var(--brand-ice); border-color: var(--gold); }
+
+/* Dark mode legibility: no white row bars, readable selection, strong values, dark scrollbars. */
+.dark { color-scheme: dark; scrollbar-color: #2b4761 var(--background); }
+.dark ::selection { background: rgba(185, 149, 85, 0.45); color: #ffffff; }
+.dark *::-webkit-scrollbar { width: 10px; height: 10px; }
+.dark *::-webkit-scrollbar-track { background: var(--background); }
+.dark *::-webkit-scrollbar-thumb { background: #2b4761; border-radius: 8px; border: 2px solid var(--background); }
+.dark .zetta-app tbody tr,
+.dark .zetta-app tbody tr:hover,
+.dark .zetta-app tbody tr:focus-within,
+.dark .zetta-app tbody tr[aria-selected="true"] { background-color: transparent; }
+.dark .zetta-app tbody tr:hover,
+.dark .zetta-app tbody tr:focus-within,
+.dark .zetta-app tbody tr[aria-selected="true"] { background-color: rgba(120, 170, 200, 0.08); }
+.dark .zetta-app tfoot tr, .dark .zetta-app tr[class~="bg-[#f7f8fa]"] { background-color: var(--muted); }
+.dark .zetta-app [class*="hover:bg-["]:hover,
+.dark .zetta-app [class*="hover:bg-white"]:hover { background-color: rgba(231, 225, 213, 0.08); }
+.dark .zetta-app [class*="divide-[#"] > * { border-color: var(--border); }
+.dark .zetta-app [class~="text-[#173d4a]"] { color: #cfe3ea; }
+.dark .zetta-app [class~="text-[#16a34a]"] { color: #4ade80; }
+.dark .zetta-app [class~="text-[#d97706]"] { color: #fbbf24; }
+.dark .zetta-app [class~="text-[#dc2626]"], .dark .zetta-app [class~="text-[#b91c1c]"] { color: #f87171; }
+.dark .zetta-app [class~="text-[#9aa5ad]"] { color: #6f8596; }
