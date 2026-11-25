@@ -452,6 +452,11 @@ async function upsertUserDoc(uid: string, sub: string, id: string, data: Record<
     .maybeSingle();
   const prev = (existing?.data as Record<string, unknown> | undefined) ?? {};
   const now = new Date().toISOString();
+  const previousMonths = prev["months"] && typeof prev["months"] === "object" ? prev["months"] as Record<string, Record<string, unknown>> : null;
+  const incomingMonths = data["months"] && typeof data["months"] === "object" ? data["months"] as Record<string, Record<string, unknown>> : null;
+  const mergedMonths = previousMonths && incomingMonths
+    ? Object.fromEntries(Object.entries(incomingMonths).map(([month, cell]) => [month, { ...(previousMonths[month] ?? {}), ...cell }]))
+    : incomingMonths;
   const { error } = await supabaseAdmin.from("firestore_docs").upsert(
     {
       path,
@@ -459,6 +464,7 @@ async function upsertUserDoc(uid: string, sub: string, id: string, data: Record<
       data: {
         ...prev,
         ...data,
+        ...(mergedMonths ? { months: mergedMonths } : {}),
         ownerId: uid,
         updatedAt: now,
         createdAt: (prev["createdAt"] as string | undefined) ?? now,
@@ -468,6 +474,90 @@ async function upsertUserDoc(uid: string, sub: string, id: string, data: Record<
     { onConflict: "path" },
   );
   if (error) throw error;
+}
+
+async function persistCardInstallmentProvision(
+  uid: string,
+  slot: Slot,
+  accountId: string,
+  cardId: string,
+  cardName: string,
+  transaction: SyncedTxDto,
+  dueDay: number,
+): Promise<void> {
+  const number = transaction.installmentNumber;
+  const total = transaction.totalInstallments;
+  if (!number || !total || total <= 1 || number > total) return;
+  const amountCents = Math.abs(transaction.amountCents);
+  if (!Number.isSafeInteger(amountCents) || amountCents <= 0) return;
+
+  const anchor = transaction.purchaseDate || (() => {
+    const date = new Date(`${transaction.date}T12:00:00.000Z`);
+    date.setUTCMonth(date.getUTCMonth() - (number - 1));
+    return date.toISOString().slice(0, 10);
+  })();
+  const fingerprint = [accountId, transaction.description.trim().toLocaleLowerCase("pt-BR"), anchor, total].join("|");
+  const groupHash = createHash("sha256").update(fingerprint).digest("hex").slice(0, 24);
+  const sourceRecordId = `pluggy:${slot}:card-purchase:${groupHash}`;
+  const installments: Array<{ period: string; dueDate: string; year: number; month: string }> = [];
+
+  for (let installment = 1; installment <= total; installment++) {
+    const date = new Date(`${anchor}T12:00:00.000Z`);
+    date.setUTCMonth(date.getUTCMonth() + installment - 1);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const day = Math.min(Math.max(1, dueDay), new Date(Date.UTC(year, date.getUTCMonth() + 1, 0)).getUTCDate());
+    installments.push({ year, month, period: `${year}-${month}`, dueDate: `${year}-${month}-${String(day).padStart(2, "0")}` });
+  }
+
+  const byYear = new Map<number, Array<{ month: string; dueDate: string }>>();
+  for (const installment of installments) {
+    const entries = byYear.get(installment.year) ?? [];
+    entries.push({ month: installment.month, dueDate: installment.dueDate });
+    byYear.set(installment.year, entries);
+  }
+
+  for (const [year, yearInstallments] of byYear) {
+    const months: Record<string, { expectedCents: number; paidCents: number | null; paidDate: string | null; isSettled: boolean }> = {};
+    for (let month = 1; month <= 12; month++) {
+      months[String(month).padStart(2, "0")] = { expectedCents: 0, paidCents: null, paidDate: null, isSettled: false };
+    }
+    for (const installment of yearInstallments) months[installment.month] = { expectedCents: amountCents, paidCents: null, paidDate: null, isSettled: false };
+    await upsertUserDoc(uid, "annualExpenses", `card_${groupHash}_${year}`, {
+      year,
+      creditor: transaction.description.slice(0, 140),
+      category: transaction.category.slice(0, 60) || "Cartão de crédito",
+      dueDay,
+      months,
+      expenseKind: "debt",
+      expenseSource: "card",
+      sourceRecordId,
+      cardId,
+    });
+  }
+
+  for (let index = 0; index < installments.length; index++) {
+    const installment = installments[index]!;
+    const annualId = `card_${groupHash}_${installment.year}`;
+    await upsertUserDoc(uid, "monthlyBills", `card_${groupHash}_${installment.period.replace("-", "")}`, {
+      period: installment.period,
+      creditor: transaction.description.slice(0, 140),
+      category: transaction.category.slice(0, 60) || "Cartão de crédito",
+      description: `Compra parcelada no cartão ${cardName}`,
+      dueDate: installment.dueDate,
+      expectedCents: amountCents,
+      paidDate: null,
+      paidCents: null,
+      isSettled: false,
+      sourceAnnualId: annualId,
+      installmentNumber: index + 1,
+      expenseKind: "debt",
+      cardId,
+      isCardInvoice: false,
+      note: `Parcela ${index + 1}/${total} · Compra em ${anchor}`,
+      sourceRecordId,
+    });
+  }
 }
 
 export async function handlePluggySync(uid: string, rawSlot: string): Promise<Response> {
@@ -592,9 +682,16 @@ export async function handlePluggySync(uid: string, rawSlot: string): Promise<Re
               ...(Number.isFinite(Number(t.creditCardMetadata?.totalAmount)) ? { totalAmountCents: Math.round(Number(t.creditCardMetadata?.totalAmount) * 100) } : {}),
               ...(typeof t.creditCardMetadata?.purchaseDate === "string" ? { purchaseDate: t.creditCardMetadata.purchaseDate.slice(0, 10) } : {}),
               ...(typeof t.creditCardMetadata?.billId === "string" ? { billId: t.creditCardMetadata.billId } : {}),
+              ...(a.type === "CREDIT" && Number.isInteger(t.creditCardMetadata?.installmentNumber) && Number.isInteger(t.creditCardMetadata?.totalInstallments) && Number(t.creditCardMetadata?.totalInstallments) > 1
+                ? { purchaseGroupId: createHash("sha256").update([accountId, safeDesc.toLocaleLowerCase("pt-BR"), String(t.creditCardMetadata?.purchaseDate || safeDate), String(t.creditCardMetadata?.totalInstallments)].join("|")).digest("hex").slice(0, 24) }
+                : {}),
             };
             txDtos.push(dto);
             syncedTransactions.set(id, dto);
+            if (a.type === "CREDIT") {
+              const dueDay = Number(String(a.creditData?.balanceDueDate || "").slice(-2));
+              await persistCardInstallmentProvision(uid, s, accountId, accountId, name, dto, Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 31 ? dueDay : 25).catch(() => undefined);
+            }
             transactions++;
           }
 
@@ -614,6 +711,7 @@ export async function handlePluggySync(uid: string, rawSlot: string): Promise<Re
               ...(dto.totalAmountCents !== undefined ? { totalAmountCents: dto.totalAmountCents } : {}),
               ...(dto.purchaseDate ? { purchaseDate: dto.purchaseDate } : {}),
               ...(dto.billId ? { billId: dto.billId } : {}),
+              ...(dto.purchaseGroupId ? { purchaseGroupId: dto.purchaseGroupId } : {}),
             });
           }
 
