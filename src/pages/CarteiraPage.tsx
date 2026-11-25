@@ -37,6 +37,22 @@ function getCardDesign(card: CreditCardAccount) {
   return { gradient: "linear-gradient(135deg,#173d4a,#0c1928)", label: card.institution };
 }
 
+function groupCardPurchaseTransactions<T extends { id: string; purchaseGroupId?: string; installmentNumber?: number; totalAmountCents?: number; amountCents: number }>(transactions: T[]): T[] {
+  const grouped = new Map<string, T>();
+  for (const transaction of transactions) {
+    const key = transaction.purchaseGroupId ? `purchase:${transaction.purchaseGroupId}` : transaction.id;
+    const current = grouped.get(key);
+    if (!current || (transaction.installmentNumber ?? Number.MAX_SAFE_INTEGER) < (current.installmentNumber ?? Number.MAX_SAFE_INTEGER)) {
+      grouped.set(key, transaction);
+    }
+  }
+  return [...grouped.values()].map((transaction) =>
+    transaction.purchaseGroupId && transaction.totalAmountCents !== undefined
+      ? { ...transaction, amountCents: transaction.totalAmountCents }
+      : transaction,
+  );
+}
+
 function formatCapturedAtBR(iso: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -111,21 +127,20 @@ export function CarteiraPage() {
     return map;
   }, [state.cards]);
 
+  const groupedTransactions = useMemo(
+    () => groupCardPurchaseTransactions(state.transactions),
+    [state.transactions],
+  );
+
   const filteredTx = useMemo(() => {
-    const grouped = new Map<string, (typeof state.transactions)[number]>();
-    for (const transaction of state.transactions) {
-      const key = transaction.purchaseGroupId ? `purchase:${transaction.purchaseGroupId}` : transaction.id;
-      const current = grouped.get(key);
-      if (!current || (transaction.installmentNumber ?? Number.MAX_SAFE_INTEGER) < (current.installmentNumber ?? Number.MAX_SAFE_INTEGER)) grouped.set(key, transaction);
-    }
     const q = txSearch.trim().toLowerCase();
-    return [...grouped.values()].filter((t) => {
+    return groupedTransactions.filter((t) => {
       if (!q) return true;
       return `${t.description} ${t.accountName} ${t.institution} ${t.category} ${t.date}`
         .toLowerCase()
         .includes(q);
     });
-  }, [state.transactions, txSearch]);
+  }, [groupedTransactions, txSearch]);
 
   function toggleSnapshot(id: string) {
     setExpandedSnapIds((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -147,7 +162,7 @@ export function CarteiraPage() {
   async function saveSnapshotEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editingSnapshot || !user?.uid || savingSnapshot) return;
-    if (!/^\\d{4}-(0[1-9]|1[0-2])$/.test(snapshotForm.period) || !snapshotForm.capturedAt) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(snapshotForm.period) || !snapshotForm.capturedAt) {
       toast.error("Informe uma competência e data de captura válidas."); return;
     }
     const cents = (value: string) => value.trim() ? parseBRL(value) : null;
@@ -655,7 +670,7 @@ export function CarteiraPage() {
 
       {selectedBankId && (() => { const bank = state.banks.find((item) => item.id === selectedBankId); if (!bank) return null; const rows = state.transactions.filter((tx) => tx.accountId === bank.id || tx.accountId === bank.sourceRecordId); return <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0c1928]/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setSelectedBankId(null); }}><section role="dialog" aria-modal="true" aria-label={`Movimentações de ${bank.name}`} className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"><div className="mb-4 flex items-center justify-between gap-3"><div><h3 className="text-lg font-semibold">{bank.institution} · {bank.name}</h3><p className="text-xs text-slate-300">Saldo informado: {formatBRL(bank.balanceCents)}</p></div><button type="button" onClick={() => setSelectedBankId(null)} aria-label="Fechar" className="rounded-lg p-2 hover:bg-white/10"><X className="size-4" /></button></div>{rows.length ? <div className="divide-y divide-white/10">{rows.map((tx) => <div key={tx.id} className="flex justify-between gap-3 py-3 text-sm"><div><div className="font-medium">{tx.description}</div><div className="text-xs text-slate-300">{formatDateBR(tx.date)} · {tx.category}</div></div><strong className={tx.amountCents >= 0 ? "text-emerald-400" : "text-red-400"}>{formatBRL(tx.amountCents)}</strong></div>)}</div> : <p className="py-10 text-center text-sm text-slate-300">Nenhuma movimentação encontrada para esta conta.</p>}</section></div>; })()}
 
-      {showCardDetails && activeCard && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0c1928]/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowCardDetails(false); }}><section role="dialog" aria-modal="true" aria-label={`Faturas e movimentações de ${activeCard.name}`} className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"><div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-semibold">{activeCard.institution} · {activeCard.name}</h3><p className="text-xs text-slate-300">Faturas históricas e movimentações sincronizadas</p></div><button type="button" onClick={() => setShowCardDetails(false)} aria-label="Fechar" className="rounded-lg p-2 hover:bg-white/10"><X className="size-4" /></button></div><h4 className="mb-2 text-sm font-semibold">Faturas anteriores e atuais</h4>{sortedSnapshots.filter((snap) => snap.accountId === activeCard.id || snap.accountId === activeCard.sourceRecordId).length ? <div className="space-y-2">{sortedSnapshots.filter((snap) => snap.accountId === activeCard.id || snap.accountId === activeCard.sourceRecordId).map((snap) => <div key={snap.id} className="rounded-lg border border-white/10 p-3"><div className="flex justify-between gap-3"><strong>{snap.period}</strong><strong>{snap.invoiceCents === null ? "—" : formatBRL(snap.invoiceCents)}</strong></div><p className="mt-1 text-xs text-slate-300">Fechamento {snap.closingDate ? formatDateBR(snap.closingDate) : "—"} · Vencimento {snap.dueDate ? formatDateBR(snap.dueDate) : "—"}</p></div>)}</div> : <p className="rounded-lg border border-white/10 p-4 text-sm text-slate-300">Nenhuma fatura histórica sincronizada para este cartão.</p>}<h4 className="mb-2 mt-5 text-sm font-semibold">Provisões futuras e parcelas pendentes</h4>{state.monthlyBills.filter((bill) => (bill.cardId === activeCard.id || bill.cardId === activeCard.sourceRecordId) && bill.period >= new Date().toISOString().slice(0, 7) && !bill.isSettled).sort((a, b) => a.period.localeCompare(b.period)).length ? <div className="space-y-1">{state.monthlyBills.filter((bill) => (bill.cardId === activeCard.id || bill.cardId === activeCard.sourceRecordId) && bill.period >= new Date().toISOString().slice(0, 7) && !bill.isSettled).sort((a, b) => a.period.localeCompare(b.period)).map((bill) => <div key={bill.id} className="flex justify-between gap-3 border-t border-white/10 py-2 text-sm"><span>{bill.creditor}<small className="block text-xs text-slate-300">{formatDateBR(bill.dueDate)}{bill.installmentNumber ? ` · Parcela ${bill.installmentNumber}` : ""}</small></span><strong>{formatBRL(bill.expectedCents)}</strong></div>)}</div> : <p className="rounded-lg border border-dashed border-white/20 p-4 text-sm text-slate-300">Nenhuma provisão futura foi sincronizada para este cartão. Quando a Pluggy fornecer os metadados de parcelamento, as parcelas serão registradas nas despesas anuais e mensais.</p>}<h4 className="mb-2 mt-5 text-sm font-semibold">Movimentações do cartão</h4>{state.transactions.filter((tx) => tx.accountId === activeCard.id || tx.accountId === activeCard.sourceRecordId).map((tx) => <div key={tx.id} className="flex justify-between gap-3 border-t border-white/10 py-2 text-sm"><span>{tx.description}<small className="block text-xs text-slate-300">{formatDateBR(tx.date)}</small></span><strong>{formatBRL(tx.amountCents)}</strong></div>)}</section></div>}
+      {showCardDetails && activeCard && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0c1928]/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowCardDetails(false); }}><section role="dialog" aria-modal="true" aria-label={`Faturas e movimentações de ${activeCard.name}`} className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"><div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-semibold">{activeCard.institution} · {activeCard.name}</h3><p className="text-xs text-slate-300">Faturas históricas e movimentações sincronizadas</p></div><button type="button" onClick={() => setShowCardDetails(false)} aria-label="Fechar" className="rounded-lg p-2 hover:bg-white/10"><X className="size-4" /></button></div><h4 className="mb-2 text-sm font-semibold">Faturas anteriores e atuais</h4>{sortedSnapshots.filter((snap) => snap.accountId === activeCard.id || snap.accountId === activeCard.sourceRecordId).length ? <div className="space-y-2">{sortedSnapshots.filter((snap) => snap.accountId === activeCard.id || snap.accountId === activeCard.sourceRecordId).map((snap) => <div key={snap.id} className="rounded-lg border border-white/10 p-3"><div className="flex justify-between gap-3"><strong>{snap.period}</strong><strong>{snap.invoiceCents === null ? "—" : formatBRL(snap.invoiceCents)}</strong></div><p className="mt-1 text-xs text-slate-300">Fechamento {snap.closingDate ? formatDateBR(snap.closingDate) : "—"} · Vencimento {snap.dueDate ? formatDateBR(snap.dueDate) : "—"}</p></div>)}</div> : <p className="rounded-lg border border-white/10 p-4 text-sm text-slate-300">Nenhuma fatura histórica sincronizada para este cartão.</p>}<h4 className="mb-2 mt-5 text-sm font-semibold">Provisões futuras e parcelas pendentes</h4>{state.monthlyBills.filter((bill) => (bill.cardId === activeCard.id || bill.cardId === activeCard.sourceRecordId) && bill.period >= new Date().toISOString().slice(0, 7) && !bill.isSettled).sort((a, b) => a.period.localeCompare(b.period)).length ? <div className="space-y-1">{state.monthlyBills.filter((bill) => (bill.cardId === activeCard.id || bill.cardId === activeCard.sourceRecordId) && bill.period >= new Date().toISOString().slice(0, 7) && !bill.isSettled).sort((a, b) => a.period.localeCompare(b.period)).map((bill) => <div key={bill.id} className="flex justify-between gap-3 border-t border-white/10 py-2 text-sm"><span>{bill.creditor}<small className="block text-xs text-slate-300">{formatDateBR(bill.dueDate)}{bill.installmentNumber ? ` · Parcela ${bill.installmentNumber}` : ""}</small></span><strong>{formatBRL(bill.expectedCents)}</strong></div>)}</div> : <p className="rounded-lg border border-dashed border-white/20 p-4 text-sm text-slate-300">Nenhuma provisão futura foi sincronizada para este cartão. Quando a Pluggy fornecer os metadados de parcelamento, as parcelas serão registradas nas despesas anuais e mensais.</p>}<h4 className="mb-2 mt-5 text-sm font-semibold">Movimentações do cartão</h4>{groupCardPurchaseTransactions(state.transactions.filter((tx) => tx.accountId === activeCard.id || tx.accountId === activeCard.sourceRecordId)).map((tx) => <div key={tx.id} className="flex justify-between gap-3 border-t border-white/10 py-2 text-sm"><span>{tx.description}<small className="block text-xs text-slate-300">{formatDateBR(tx.date)}</small></span><strong>{formatBRL(tx.amountCents)}</strong></div>)}</section></div>}
 
       {selectedTransaction && <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0c1928]/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setSelectedTransaction(null); }}><section role="dialog" aria-modal="true" aria-label="Detalhes da movimentação" className="w-full max-w-lg rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl"><div className="mb-4 flex justify-between"><h3 className="text-lg font-semibold">Detalhes da movimentação</h3><button type="button" onClick={() => setSelectedTransaction(null)} aria-label="Fechar" className="rounded-lg p-2 hover:bg-white/10"><X className="size-4" /></button></div><p className="font-semibold">{selectedTransaction.description}</p><p className="mt-1 text-xs text-slate-300">{formatDateBR(selectedTransaction.date)} · {selectedTransaction.category}</p><p className="mt-4 text-2xl font-bold">{formatBRL(selectedTransaction.amountCents)}</p><dl className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><dt className="text-slate-400">Conta registrada</dt><dd>{selectedTransaction.institution} · {selectedTransaction.accountName}</dd></div><div><dt className="text-slate-400">Natureza</dt><dd>{selectedTransaction.accountType === "CREDIT" ? (selectedTransaction.amountCents < 0 ? "Crédito / pagamento recebido no cartão" : "Compra / débito no cartão") : (selectedTransaction.amountCents >= 0 ? "Entrada na conta" : "Saída da conta")}</dd></div>{selectedCounterpart && <><div><dt className="text-slate-400">Origem</dt><dd>{(selectedTransaction.accountType === "BANK" ? selectedTransaction : selectedCounterpart).institution} · {(selectedTransaction.accountType === "BANK" ? selectedTransaction : selectedCounterpart).accountName}</dd></div><div><dt className="text-slate-400">Destino</dt><dd>{(selectedTransaction.accountType === "CREDIT" ? selectedTransaction : selectedCounterpart).institution} · {(selectedTransaction.accountType === "CREDIT" ? selectedTransaction : selectedCounterpart).accountName}</dd></div></>}<div><dt className="text-slate-400">Identificação</dt><dd>{selectedTransaction.reconciledEventId || "Movimentação importada"}</dd></div></dl></section></div>}
 
