@@ -680,7 +680,7 @@ export async function handlePluggySync(uid: string, rawSlot: string): Promise<Re
               ...(typeof t.creditCardMetadata?.purchaseDate === "string" ? { purchaseDate: t.creditCardMetadata.purchaseDate.slice(0, 10) } : {}),
               ...(typeof t.creditCardMetadata?.billId === "string" ? { billId: t.creditCardMetadata.billId } : {}),
               ...(a.type === "CREDIT" && Number.isInteger(t.creditCardMetadata?.installmentNumber) && Number.isInteger(t.creditCardMetadata?.totalInstallments) && Number(t.creditCardMetadata?.totalInstallments) > 1
-                ? { purchaseGroupId: createHash("sha256").update([accountId, safeDesc.toLocaleLowerCase("pt-BR"), String(t.creditCardMetadata?.purchaseDate || (() => { const anchor = new Date(`${safeDate}T12:00:00.000Z`); anchor.setUTCDate(1); anchor.setUTCMonth(anchor.getUTCMonth() - (Number(t.creditCardMetadata?.installmentNumber) - 1)); return anchor.toISOString().slice(0, 10); })()), String(t.creditCardMetadata?.totalInstallments)].join("|")).digest("hex").slice(0, 24) }
+                ? { purchaseGroupId: createHash("sha256").update([accountId, safeDesc.toLocaleLowerCase("pt-BR"), String(t.creditCardMetadata?.purchaseDate?.slice(0, 10) || (() => { const anchor = new Date(`${safeDate}T12:00:00.000Z`); anchor.setUTCDate(1); anchor.setUTCMonth(anchor.getUTCMonth() - (Number(t.creditCardMetadata?.installmentNumber) - 1)); return anchor.toISOString().slice(0, 10); })()), String(t.creditCardMetadata?.totalInstallments)].join("|")).digest("hex").slice(0, 24) }
                 : {}),
             };
             txDtos.push(dto);
