@@ -66,7 +66,9 @@ describe("correção explícita de 15/11/2026", () => {
     const plan = planGenericPaymentDateRepair(state);
     expect(plan.find((p) => p.id === "ev")?.dates).toEqual({ paidDate: "2026-09-10" });
     expect(plan.find((p) => p.id === "annual")?.dates).toEqual({ "09": "2026-09-30" });
-    state.paymentEvents.push({ ...state.paymentEvents[0], id: "reverse", targetEventId: "ev", kind: "estorno", paidCents: 0, paidDate: null, isSettled: false, creditor: "Energia", dueDate: "2026-09-10", expectedCents: 25000, reason: "Estorno", eventCreatedAt: "2026-11-16T12:00:00Z" });
+    const event = state.paymentEvents[0];
+    if (!event) throw new Error("Missing fixture");
+    state.paymentEvents.push({ ...event, id: "reverse", targetEventId: "ev", kind: "estorno", paidCents: 0, paidDate: null, isSettled: false, creditor: "Energia", dueDate: "2026-09-10", expectedCents: 25000, reason: "Estorno", eventCreatedAt: "2026-11-16T12:00:00Z" });
     expect(planGenericPaymentDateRepair(state).some((p) => p.id === "ev")).toBe(false);
   });
   it("não repete reparos após datas corrigidas", () => {
