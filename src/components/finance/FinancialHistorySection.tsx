@@ -7,11 +7,15 @@ import {
   extractDistinctParties,
   filterHistoryRows,
   groupHistoryByMonth,
+  historyCompetence,
+  type HistoryRegime,
   resolveRowAttachments,
   type HistoryDirection,
   type HistoryFilters,
   type UnifiedHistoryRow,
 } from "@/lib/domain/ledgerHistory";
+import { Button } from "@/components/ui/button";
+import { GENERIC_PAYMENT_DATE, planGenericPaymentDateRepair } from "@/lib/domain/paymentDateRepair";
 import { formatBRL, formatDateBR } from "@/lib/domain/money";
 import { useOrion } from "@/store/orionContext";
 import { AttachmentsModal } from "@/components/finance/AttachmentsModal";
@@ -45,7 +49,12 @@ const EMPTY_FILTERS: HistoryFilters = {
 };
 
 export function FinancialHistorySection({ direction, rows }: FinancialHistorySectionProps) {
-  const { state } = useOrion();
+  const { state, repairGenericPaymentDates } = useOrion();
+  const [regime, setRegime] = useState<HistoryRegime>("cash");
+  const [repairOpen, setRepairOpen] = useState(false);
+  const [repairing, setRepairing] = useState(false);
+  const repairPlan = useMemo(() => planGenericPaymentDateRepair(state), [state]);
+  const repairCount = repairPlan.reduce((sum, item) => sum + Object.keys(item.dates).length, 0);
 
   const [draftFilters, setDraftFilters] = useState<HistoryFilters>(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<HistoryFilters>(EMPTY_FILTERS);
@@ -65,16 +74,16 @@ export function FinancialHistorySection({ direction, rows }: FinancialHistorySec
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [menuOpen]);
 
-  const availableYears = useMemo(() => extractAvailableHistoryYears(rows), [rows]);
+  const availableYears = useMemo(() => extractAvailableHistoryYears(rows, regime), [rows, regime]);
   const distinctParties = useMemo(() => extractDistinctParties(rows), [rows]);
 
   const filteredRows = useMemo(
-    () => filterHistoryRows(rows, appliedFilters),
-    [rows, appliedFilters],
+    () => filterHistoryRows(rows, { ...appliedFilters, regime }),
+    [rows, appliedFilters, regime],
   );
   const groups = useMemo(
-    () => groupHistoryByMonth(filteredRows, direction),
-    [filteredRows, direction],
+    () => groupHistoryByMonth(filteredRows, direction, regime),
+    [filteredRows, direction, regime],
   );
 
   const selectedAttachmentRow = useMemo(
@@ -116,7 +125,7 @@ export function FinancialHistorySection({ direction, rows }: FinancialHistorySec
 
   async function handleCopyReport() {
     setMenuOpen(false);
-    const reportText = buildHistoryCopyReport(direction, groups, appliedFilters);
+    const reportText = buildHistoryCopyReport(direction, groups, { ...appliedFilters, regime });
     try {
       await navigator.clipboard.writeText(reportText);
       toast.success("Relatório copiado para a área de transferência.");
@@ -128,6 +137,20 @@ export function FinancialHistorySection({ direction, rows }: FinancialHistorySec
   function handlePrintReport() {
     setMenuOpen(false);
     window.print();
+  }
+
+  async function handleRepairDates() {
+    if (repairing) return;
+    setRepairing(true);
+    try {
+      const count = await repairGenericPaymentDates();
+      toast.success(`${count} registro(s) e espelho(s) corrigidos, sem alterar valores ou saldos.`);
+      setRepairOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível concluir. Tente novamente para corrigir os restantes.");
+    } finally {
+      setRepairing(false);
+    }
   }
 
   const isPayment = direction === "payment";
@@ -197,6 +220,25 @@ export function FinancialHistorySection({ direction, rows }: FinancialHistorySec
           </div>
         </div>
 
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <label className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+            Regime do histórico
+            <select
+              aria-label="Regime do histórico"
+              value={regime}
+              onChange={(event) => setRegime(event.target.value === "competence" ? "competence" : "cash")}
+              className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            >
+              <option value="cash">Caixa — data do {isPayment ? "pagamento" : "recebimento"}</option>
+              <option value="competence">Competência — mês da conta / vencimento</option>
+            </select>
+          </label>
+          {isPayment && (
+            <Button variant="outline" size="sm" disabled={repairCount === 0 || repairing} onClick={() => setRepairOpen(true)}>
+              <Pencil /> Corrigir datas de 15/11/2026 ({repairCount})
+            </Button>
+          )}
+        </div>
         <form onSubmit={applyFilters} className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-12">
           <div className="lg:col-span-2">
             <label className="mb-1 block text-[11px] font-medium text-[#52616a]">Ano</label>
@@ -276,7 +318,7 @@ export function FinancialHistorySection({ direction, rows }: FinancialHistorySec
           </span>
         </div>
         <p className="text-[11px] text-[#52616a]">
-          Filtros: Ano {appliedFilters.year === "all" ? "Todos" : appliedFilters.year} · Mês{" "}
+          Regime: {regime === "competence" ? "Competência" : "Caixa"} · Filtros: Ano {appliedFilters.year === "all" ? "Todos" : appliedFilters.year} · Mês{" "}
           {appliedFilters.month === "all"
             ? "Todos"
             : (MONTH_OPTIONS.find((m) => m.value === appliedFilters.month)?.label ?? appliedFilters.month)}
@@ -323,6 +365,7 @@ export function FinancialHistorySection({ direction, rows }: FinancialHistorySec
                   <thead>
                     <tr className="border-b border-[#dce2e6] bg-white text-[11px] font-semibold text-[#52616a]">
                       <th className="py-2.5 pl-5 pr-3">{partyColumnLabel}</th>
+                      <th className="py-2.5 px-3">Competência</th>
                       <th className="py-2.5 px-3 text-right">Valor previsto</th>
                       <th className="py-2.5 px-3">{isPayment ? "Vencimento" : "Vencimento"}</th>
                       <th className="py-2.5 px-3">{effectiveDateColumnLabel}</th>
@@ -364,6 +407,7 @@ export function FinancialHistorySection({ direction, rows }: FinancialHistorySec
                             )}
                           </td>
 
+                          <td className="tabular-nums py-3 px-3 text-muted-foreground">{historyCompetence(row) ?? "—"}</td>
                           <td className="tabular-nums py-3 px-3 text-right font-medium text-[#52616a]">
                             {formatBRL(row.expectedCents)}
                           </td>
@@ -428,6 +472,36 @@ export function FinancialHistorySection({ direction, rows }: FinancialHistorySec
               </div>
             </section>
           ))}
+        </div>
+      )}
+
+      {repairOpen && (
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4">
+          <section role="dialog" aria-modal="true" aria-label="Corrigir datas genéricas" className="flex max-h-[85vh] w-full max-w-xl flex-col rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg">
+            <h3 className="text-lg font-semibold">Corrigir datas de 15/11/2026</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {repairCount} data(s) em pagamentos e seus espelhos serão alinhadas ao vencimento da respectiva competência.
+              Valores, saldos, comprovantes e outras datas serão mantidos. O registro original ficará preservado na auditoria.
+            </p>
+            <div className="my-4 flex-1 overflow-auto">
+              <table className="w-full text-left text-xs">
+                <thead><tr><th className="p-2">Registro</th><th className="p-2">Data corrigida</th></tr></thead>
+                <tbody>{repairPlan.flatMap((item) => Object.entries(item.dates).map(([field, date]) => {
+                  const source = item.collection === "annualExpenses" ? state.annualExpenses.find((a) => a.id === item.id)
+                    : item.collection === "monthlyBills" ? state.monthlyBills.find((b) => b.id === item.id)
+                    : item.collection === "paymentEvents" ? state.paymentEvents.find((e) => e.id === item.id) : null;
+                  return <tr key={`${item.collection}:${item.id}:${field}`} className="border-t border-border">
+                    <td className="p-2">{source?.creditor ?? "Parcela"}{field !== "paidDate" ? ` · ${field}/${state.annualExpenses.find((a) => a.id === item.id)?.year}` : ""}</td>
+                    <td className="p-2 tabular-nums">{formatDateBR(GENERIC_PAYMENT_DATE)} → {formatDateBR(date)}</td>
+                  </tr>;
+                }))}</tbody>
+              </table>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="outline" disabled={repairing} onClick={() => setRepairOpen(false)}>Cancelar</Button>
+              <Button disabled={repairing || repairCount === 0} onClick={() => void handleRepairDates()}>{repairing ? "Corrigindo…" : "Confirmar correção das datas"}</Button>
+            </div>
+          </section>
         </div>
       )}
 
