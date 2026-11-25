@@ -9,6 +9,10 @@ import {
   History,
   Plus,
   Radio,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BankAvatar } from "@/components/BankAvatar";
@@ -16,6 +20,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PluggySettings } from "@/components/PluggySettings";
 import { useOrion } from "@/store/orionContext";
 import { formatBRL, formatDateBR, parseBRL } from "@/lib/domain/money";
+import { db, doc, getDoc, updateDoc, deleteDoc } from "@/lib/firebase";
 import type { CardBrand, CreditCardAccount } from "@/types/orion";
 
 function getCardDesign(card: CreditCardAccount) {
@@ -46,12 +51,16 @@ function formatCapturedAtBR(iso: string): string {
 }
 
 export function CarteiraPage() {
-  const { state, addBankAccount, addCreditCard } = useOrion();
+  const { state, user, addBankAccount, addCreditCard } = useOrion();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCardIdx, setSelectedCardIdx] = useState(0);
   const [txFilter, setTxFilter] = useState<"all" | "income" | "expense">("all");
   const [txSearch, setTxSearch] = useState(() => searchParams.get("q") ?? "");
   const [expandedSnapIds, setExpandedSnapIds] = useState<Record<string, boolean>>({});
+  const [snapshotMenuId, setSnapshotMenuId] = useState<string | null>(null);
+  const [editingSnapshot, setEditingSnapshot] = useState<(typeof state.cardMonthSnapshots)[number] | null>(null);
+  const [snapshotForm, setSnapshotForm] = useState({ accountId: "", period: "", capturedAt: "", closingDate: "", dueDate: "", invoice: "", totalLimit: "", usedLimit: "", availableLimit: "" });
+  const [savingSnapshot, setSavingSnapshot] = useState(false);
 
   useEffect(() => {
     const q = searchParams.get("q");
@@ -107,6 +116,71 @@ export function CarteiraPage() {
   function toggleSnapshot(id: string) {
     setExpandedSnapIds((prev) => ({ ...prev, [id]: !prev[id] }));
   }
+  function openSnapshotEditor(snap: (typeof state.cardMonthSnapshots)[number]) {
+    setSnapshotMenuId(null);
+    setEditingSnapshot(snap);
+    setSnapshotForm({
+      accountId: cardLookup.get(snap.accountId)?.id ?? "", period: snap.period,
+      capturedAt: snap.capturedAt ? new Date(snap.capturedAt).toISOString().slice(0, 16) : "",
+      closingDate: snap.closingDate ?? "", dueDate: snap.dueDate ?? "",
+      invoice: snap.invoiceCents === null ? "" : (snap.invoiceCents / 100).toFixed(2).replace(".", ","),
+      totalLimit: snap.totalLimitCents === null ? "" : (snap.totalLimitCents / 100).toFixed(2).replace(".", ","),
+      usedLimit: snap.usedLimitCents === null ? "" : (snap.usedLimitCents / 100).toFixed(2).replace(".", ","),
+      availableLimit: snap.availableLimitCents === null ? "" : (snap.availableLimitCents / 100).toFixed(2).replace(".", ","),
+    });
+  }
+
+  async function saveSnapshotEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingSnapshot || !user?.uid || savingSnapshot) return;
+    if (!/^\\d{4}-(0[1-9]|1[0-2])$/.test(snapshotForm.period) || !snapshotForm.capturedAt) {
+      toast.error("Informe uma competência e data de captura válidas."); return;
+    }
+    const cents = (value: string) => value.trim() ? parseBRL(value) : null;
+    const invoice = cents(snapshotForm.invoice), totalLimit = cents(snapshotForm.totalLimit);
+    const usedLimit = cents(snapshotForm.usedLimit), availableLimit = cents(snapshotForm.availableLimit);
+    if ([invoice, totalLimit, usedLimit, availableLimit].some((v) => v !== null && (!Number.isSafeInteger(v) || v < 0))) {
+      toast.error("Informe valores monetários válidos e não negativos."); return;
+    }
+    const linked = state.cards.find((card) => card.id === snapshotForm.accountId);
+    setSavingSnapshot(true);
+    try {
+      const ref = doc(db, "users", user.uid, "cardMonthSnapshots", editingSnapshot.id);
+      const current = await getDoc(ref);
+      if (!current.exists()) throw new Error("Este retrato não existe mais.");
+      await updateDoc(ref, {
+        accountId: linked?.id ?? editingSnapshot.accountId,
+        ...(linked ? { accountName: linked.institution + " · " + linked.name, isUnlinked: false } : { isUnlinked: true }),
+        period: snapshotForm.period, capturedAt: new Date(snapshotForm.capturedAt).toISOString(),
+        closingDate: snapshotForm.closingDate || null, dueDate: snapshotForm.dueDate || null,
+        invoiceCents: invoice, totalLimitCents: totalLimit, usedLimitCents: usedLimit,
+        availableLimitCents: availableLimit, updatedAt: new Date().toISOString(),
+      });
+      setEditingSnapshot(null); toast.success("Retrato mensal atualizado.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o retrato.");
+    } finally { setSavingSnapshot(false); }
+  }
+
+  async function deleteSnapshot(snap: (typeof state.cardMonthSnapshots)[number]) {
+    setSnapshotMenuId(null);
+    if (!user?.uid) { toast.error("Entre na sua conta para excluir este retrato."); return; }
+    if (snap.transactions.length > 0) {
+      toast.error("Este retrato contém lançamentos. Remova ou desvincule-os por um fluxo próprio antes de excluir."); return;
+    }
+    if (!window.confirm("Excluir somente este retrato histórico? O cartão cadastrado não será alterado.")) return;
+    try {
+      const ref = doc(db, "users", user.uid, "cardMonthSnapshots", snap.id);
+      const current = await getDoc(ref);
+      if (!current.exists()) throw new Error("Este retrato já foi removido.");
+      const data = current.data();
+      if (Array.isArray(data["transactions"]) && data["transactions"].length > 0) throw new Error("O retrato recebeu lançamentos e não pode ser excluído.");
+      await deleteDoc(ref); toast.success("Retrato histórico excluído.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível excluir o retrato.");
+    }
+  }
+
 
   function submitBank(e: React.FormEvent) {
     e.preventDefault();
@@ -463,18 +537,25 @@ export function CarteiraPage() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => toggleSnapshot(snap.id)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#dce2e6] bg-white px-3 py-1.5 text-xs font-semibold text-[#173d4a] hover:bg-[#f0f3f5]"
-                    >
-                      {snap.transactions.length} lançamento(s)
-                      {expanded ? (
-                        <ChevronUp className="size-3.5" />
-                      ) : (
-                        <ChevronDown className="size-3.5" />
-                      )}
-                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className="relative">
+                        <button type="button" onClick={() => setSnapshotMenuId((id) => id === snap.id ? null : snap.id)}
+                          aria-label={"Ações do retrato " + snap.period + " — " + cardTitle} aria-haspopup="menu"
+                          aria-expanded={snapshotMenuId === snap.id}
+                          className="grid size-9 place-items-center rounded-lg border border-[#dce2e6] bg-white text-[#52616a] hover:bg-[#f0f3f5]">
+                          <MoreVertical className="size-4" />
+                        </button>
+                        {snapshotMenuId === snap.id && <div role="menu" className="absolute right-0 z-30 mt-1 w-44 overflow-hidden rounded-lg border border-[#dce2e6] bg-white py-1 shadow-lg">
+                          <button type="button" role="menuitem" onClick={() => openSnapshotEditor(snap)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[#0c1928] hover:bg-[#f0f3f5]"><Pencil className="size-3.5" /> Alterar retrato</button>
+                          <button type="button" role="menuitem" onClick={() => void deleteSnapshot(snap)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-red-700 hover:bg-red-50"><Trash2 className="size-3.5" /> Excluir retrato</button>
+                        </div>}
+                      </div>
+                      <button type="button" onClick={() => toggleSnapshot(snap.id)} aria-expanded={expanded}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#dce2e6] bg-white px-3 py-1.5 text-xs font-semibold text-[#173d4a] hover:bg-[#f0f3f5]">
+                        {snap.transactions.length} lançamento(s)
+                        {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
@@ -552,6 +633,27 @@ export function CarteiraPage() {
           </div>
         )}
       </section>
+
+
+      {editingSnapshot && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0c1928]/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditingSnapshot(null); }}>
+          <div role="dialog" aria-modal="true" aria-labelledby="snapshot-edit-title" className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-[#294158] bg-[#102033] p-5 text-white shadow-2xl">
+            <div className="mb-4 flex items-center justify-between gap-3"><h3 id="snapshot-edit-title" className="text-base font-semibold">Alterar retrato mensal</h3>
+              <button type="button" aria-label="Fechar edição" onClick={() => setEditingSnapshot(null)} className="grid size-8 place-items-center rounded-lg text-slate-300 hover:bg-white/10"><X className="size-4" /></button></div>
+            <form onSubmit={saveSnapshotEdit} className="grid gap-3 sm:grid-cols-2">
+              <label className="text-xs text-slate-300">Cartão vinculado<select value={snapshotForm.accountId} onChange={(e) => setSnapshotForm((p) => ({ ...p, accountId: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white">
+                <option value="">Manter sem vínculo</option>{state.cards.map((card) => <option key={card.id} value={card.id}>{card.institution} · {card.name}</option>)}</select></label>
+              <label className="text-xs text-slate-300">Competência<input type="month" required value={snapshotForm.period} onChange={(e) => setSnapshotForm((p) => ({ ...p, period: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white" /></label>
+              <label className="text-xs text-slate-300">Data e hora da captura<input type="datetime-local" required value={snapshotForm.capturedAt} onChange={(e) => setSnapshotForm((p) => ({ ...p, capturedAt: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white" /></label>
+              <label className="text-xs text-slate-300">Data de fechamento<input type="date" value={snapshotForm.closingDate} onChange={(e) => setSnapshotForm((p) => ({ ...p, closingDate: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white" /></label>
+              <label className="text-xs text-slate-300">Data de vencimento<input type="date" value={snapshotForm.dueDate} onChange={(e) => setSnapshotForm((p) => ({ ...p, dueDate: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white" /></label>
+              {([["invoice","Fatura na captura (R$)"],["totalLimit","Limite total na época (R$)"],["usedLimit","Utilizado na época (R$)"],["availableLimit","Disponível na época (R$)"]] as const).map(([key,label]) => <label key={key} className="text-xs text-slate-300">{label}<input inputMode="decimal" placeholder="0,00" value={snapshotForm[key]} onChange={(e) => setSnapshotForm((p) => ({ ...p, [key]: e.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-slate-600 bg-[#0b1928] px-3 text-sm text-white" /></label>)}
+              <div className="flex justify-end gap-2 pt-2 sm:col-span-2"><button type="button" onClick={() => setEditingSnapshot(null)} className="h-9 rounded-lg border border-slate-600 px-4 text-xs font-semibold text-slate-200">Cancelar</button>
+                <button type="submit" disabled={savingSnapshot} className="h-9 rounded-lg bg-cyan-700 px-4 text-xs font-semibold text-white disabled:opacity-50">{savingSnapshot ? "Salvando..." : "Salvar alterações"}</button></div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal: Bank */}
       {bankOpen && (
