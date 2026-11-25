@@ -59,6 +59,7 @@ export type WalletTransaction = {
   totalAmountCents?: number;
   purchaseDate?: string;
   billId?: string;
+  purchaseGroupId?: string;
 };
 
 export type RevenueSource = {
