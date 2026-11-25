@@ -575,6 +575,7 @@ export function OrionProvider({ children }: { children: ReactNode }) {
           ...(typeof d["totalAmountCents"] === "number" ? { totalAmountCents: d["totalAmountCents"] } : {}),
           ...(typeof d["purchaseDate"] === "string" ? { purchaseDate: d["purchaseDate"] } : {}),
           ...(typeof d["billId"] === "string" ? { billId: d["billId"] } : {}),
+          ...(typeof d["purchaseGroupId"] === "string" ? { purchaseGroupId: d["purchaseGroupId"] } : {}),
           ...(typeof d["reconciledEventId"] === "string" || d["reconciledEventId"] === null
             ? { reconciledEventId: d["reconciledEventId"] as string | null }
             : {}),
