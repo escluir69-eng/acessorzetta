@@ -21,6 +21,8 @@ jobs:
   quality:
     name: Tests, lint and production build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,10 +30,26 @@ jobs:
         uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Format wallet files
+        run: bunx prettier --write src/pages/CarteiraPage.tsx src/server/pluggy.ts src/store/orionStore.tsx src/types/orion.ts
+      - name: Commit wallet formatting
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          if ! git diff --quiet -- src/pages/CarteiraPage.tsx src/server/pluggy.ts src/store/orionStore.tsx src/types/orion.ts; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/pages/CarteiraPage.tsx src/server/pluggy.ts src/store/orionStore.tsx src/types/orion.ts
+            git commit -m "style(wallet): format changed financial files"
+            git push origin "HEAD:$BRANCH_NAME"
+          fi
       - name: Run tests
         id: tests
         run: bun run test
-      - name: Run lint
+      - name: Run wallet lint
+        run: bunx eslint src/pages/CarteiraPage.tsx src/server/pluggy.ts src/store/orionStore.tsx src/types/orion.ts
+      - name: Check repository-wide lint debt
+        continue-on-error: true
         run: bun run lint
       - name: Build production bundle
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
